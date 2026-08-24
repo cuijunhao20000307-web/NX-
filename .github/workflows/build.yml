@@ -43,6 +43,7 @@ jobs:
           python3 tools/patch_031_version.py
           python3 tools/patch_032_chinese_keyboard.py
           python3 tools/patch_033_modified_dot.py
+          python3 tools/patch_034_batch_reboot.py
       - name: Build NRO
         shell: bash
         run: |
