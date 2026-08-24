@@ -181,7 +181,7 @@ void HttpServer::handle_client(int fd) {
     }
 
     if (content_len > 8 * 1024 * 1024) {
-        send_response(fd, 413, "text/plain", "Image too large (max 8 MiB).\n");
+        send_response(fd, 413, "text/plain", "图片太大，最大支持 8 MiB。\n");
         return;
     }
 
@@ -202,18 +202,19 @@ void HttpServer::handle_client(int fd) {
             std::lock_guard<std::mutex> lk(state_.mutex);
             g = state_.game;
         }
-        std::string page = R"HTML(<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>NXTitleStudio</title><style>
-body{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;background:#111;color:#eee;margin:0;padding:22px}main{max-width:620px;margin:auto}.card{background:#1b1b1b;border-radius:18px;padding:20px;margin:12px 0}h1{font-size:25px}label{display:block;margin-top:14px;font-size:13px;color:#aaa}input{width:100%;box-sizing:border-box;padding:13px;border-radius:11px;border:1px solid #444;background:#0c0c0c;color:#fff;font-size:16px}button{width:100%;padding:14px;margin-top:18px;border:0;border-radius:12px;background:#fff;color:#111;font-weight:700;font-size:16px}.danger{background:#ff5f57}.small{color:#999;font-size:12px;word-break:break-all}#msg{white-space:pre-wrap}</style></head><body><main><h1>NXTitleStudio</h1><div class="card"><b>)HTML";
+        std::string page = R"HTML(<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#101214"><title>NX标题工坊</title><style>
+*{box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:#101214;color:#f4f4f5;margin:0;padding:24px 18px 40px}main{max-width:620px;margin:auto}h1{font-size:32px;margin:14px 0 28px;font-weight:800;letter-spacing:-.5px}.card{background:#1b1d1f;border-radius:22px;padding:24px 20px;box-shadow:0 1px 0 rgba(255,255,255,.03) inset}.game-title{font-size:20px;font-weight:750;line-height:1.35}.small{color:#8f9398;font-size:14px;word-break:break-all;margin-top:4px}label{display:block;margin-top:22px;margin-bottom:8px;font-size:15px;color:#a7aaae}input[type=text]{width:100%;padding:15px 14px;border-radius:13px;border:1px solid #484b50;background:#0c0d0e;color:#fff;font-size:17px;outline:none}input[type=text]:focus{border-color:#7f858b}.filebox{margin-top:4px;border:1px solid #484b50;background:#0c0d0e;border-radius:13px;min-height:58px;display:flex;align-items:center;padding:9px 11px;gap:12px}.filebtn{display:inline-flex;align-items:center;justify-content:center;background:#f2f2f3;color:#111;border-radius:10px;padding:9px 14px;font-size:15px;font-weight:700;white-space:nowrap}.filename{font-size:15px;color:#d8d9db;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}button{width:100%;padding:16px;margin-top:20px;border:0;border-radius:14px;background:#f4f4f5;color:#101010;font-weight:800;font-size:18px}.danger{background:#ff5f57;color:#111;margin-top:16px}.hint{font-size:13px;color:#85898e;margin-top:8px}.msg{white-space:pre-wrap;line-height:1.55;margin:18px 2px 0;font-size:15px;color:#dfe1e3;min-height:10px}.section-note{font-size:13px;color:#777c82;margin-top:3px}</style></head><body><main><h1>NX标题工坊</h1><div class="card"><div class="game-title">)HTML";
         page += html_escape(g.name);
-        page += "</b><div class=\"small\">" + title_id_hex(g.title_id) + R"HTML(</div>
-<label>Game name</label><input id="name" maxlength="512" value=")HTML" + html_escape(g.name) + R"HTML(">
-<label>Publisher / author</label><input id="author" maxlength="256" value=")HTML" + html_escape(g.author) + R"HTML(">
-<label>Display version</label><input id="ver" maxlength="16" value=")HTML" + html_escape(g.version) + R"HTML(">
-<label>New icon (PNG/JPG, optional)</label><input id="img" type="file" accept="image/*">
-<button onclick="apply()">Apply override</button><button class="danger" onclick="restore()">Restore original</button><p id="msg"></p></div></main><script>
-const q=v=>encodeURIComponent(v);
-async function apply(){let f=document.getElementById('img').files[0];let body=f?await f.arrayBuffer():new ArrayBuffer(0);msg.textContent='Applying...';let u='/apply?name='+q(name.value)+'&author='+q(author.value)+'&version='+q(ver.value);let r=await fetch(u,{method:'POST',body});msg.textContent=await r.text();}
-async function restore(){if(!confirm('Restore original metadata/icon override?'))return;let r=await fetch('/restore',{method:'POST'});msg.textContent=await r.text();}
+        page += "</div><div class=\"small\">标题 ID：" + title_id_hex(g.title_id) + R"HTML(</div>
+<label>游戏名称</label><input id="name" type="text" maxlength="512" value=")HTML" + html_escape(g.name) + R"HTML(">
+<label>发行商 / 作者</label><input id="author" type="text" maxlength="256" value=")HTML" + html_escape(g.author) + R"HTML(">
+<label>显示版本</label><input id="ver" type="text" maxlength="16" value=")HTML" + html_escape(g.version) + R"HTML(">
+<label>新图标</label><div class="filebox"><label for="img" class="filebtn" style="margin:0">选择图片</label><span id="filename" class="filename">未选择图片</span></div><input id="img" type="file" accept="image/png,image/jpeg,image/webp" hidden><div class="hint">可选，支持 PNG / JPG / WebP，最大 8 MiB</div>
+<button id="applyBtn" onclick="applyOverride()">应用修改</button><button class="danger" onclick="restoreOriginal()">恢复原始设置</button><p id="msg" class="msg"></p></div></main><script>
+const el=id=>document.getElementById(id);const q=v=>encodeURIComponent(v);const msg=el('msg');
+el('img').addEventListener('change',()=>{const f=el('img').files[0];el('filename').textContent=f?f.name:'未选择图片';});
+async function applyOverride(){const btn=el('applyBtn');const f=el('img').files[0];let body=f?await f.arrayBuffer():new ArrayBuffer(0);msg.textContent='正在应用修改…';btn.disabled=true;try{let u='/apply?name='+q(el('name').value)+'&author='+q(el('author').value)+'&version='+q(el('ver').value);let r=await fetch(u,{method:'POST',body});msg.textContent=await r.text();}catch(e){msg.textContent='连接失败，请确认手机与 Switch 仍连接在同一 Wi‑Fi。';}finally{btn.disabled=false;}}
+async function restoreOriginal(){if(!confirm('确定恢复此游戏原来的名称、版本和图标覆盖吗？'))return;msg.textContent='正在恢复…';try{let r=await fetch('/restore',{method:'POST'});msg.textContent=await r.text();}catch(e){msg.textContent='连接失败，请确认手机与 Switch 仍连接在同一 Wi‑Fi。';}}
 </script></body></html>)HTML";
         send_response(fd, 200, "text/html", page);
         return;
@@ -231,10 +232,10 @@ async function restore(){if(!confirm('Restore original metadata/icon override?')
         bool ok = apply_override(g, q["name"], q["author"], q["version"], body, err);
         {
             std::lock_guard<std::mutex> lk(state_.mutex);
-            state_.status = ok ? "Applied. Reboot Switch to refresh HOME menu cache." : ("Failed: " + err);
+            state_.status = ok ? "修改已应用，重启 Switch 后刷新 HOME 菜单" : ("修改失败：" + err);
         }
         if (ok) state_.changed = true;
-        send_response(fd, ok ? 200 : 500, "text/plain", ok ? "Applied. Reboot the Switch to refresh HOME menu.\n" : ("Failed: " + err + "\n"));
+        send_response(fd, ok ? 200 : 500, "text/plain", ok ? "修改成功。请重启 Switch，让 HOME 菜单刷新名称和图标。\n" : ("修改失败：" + err + "\n"));
         return;
     }
 
@@ -245,12 +246,12 @@ async function restore(){if(!confirm('Restore original metadata/icon override?')
         bool ok = restore_override(g.title_id, err);
         {
             std::lock_guard<std::mutex> lk(state_.mutex);
-            state_.status = ok ? "Override removed. Reboot Switch." : ("Failed: " + err);
+            state_.status = ok ? "原始覆盖已恢复，请重启 Switch" : ("恢复失败：" + err);
         }
         if (ok) state_.changed = true;
-        send_response(fd, ok ? 200 : 500, "text/plain", ok ? "Restored override files. Reboot the Switch.\n" : ("Failed: " + err + "\n"));
+        send_response(fd, ok ? 200 : 500, "text/plain", ok ? "恢复成功。请重启 Switch。\n" : ("恢复失败：" + err + "\n"));
         return;
     }
 
-    send_response(fd, 404, "text/plain", "Not found\n");
+    send_response(fd, 404, "text/plain", "页面不存在\n");
 }

@@ -283,7 +283,7 @@ void ui_draw_game_list(const std::vector<GameEntry>& games, int selected, const 
     begin_frame();
     if (!g_pixels) { end_frame(); return; }
 
-    draw_header("NXTitleStudio", "游戏名称 / 图标安全覆盖工具 · Atmosphère + sys-ticon");
+    draw_header("NX标题工坊", "游戏名称 / 图标安全编辑工具 · Atmosphère + sys-ticon");
 
     fill_rect(42, 106, 760, 532, C_PANEL);
     fill_rect(822, 106, 416, 532, C_PANEL);
@@ -327,7 +327,7 @@ void ui_draw_game_list(const std::vector<GameEntry>& games, int selected, const 
         draw_text(934, 181, game.name, 25.0f, C_TEXT, 268);
         draw_text(934, 218, "已安装应用", 16.0f, C_MUTED);
 
-        draw_label_value(850, 286, "Title ID", title_id_hex(game.title_id));
+        draw_label_value(850, 286, "标题 ID", title_id_hex(game.title_id));
         draw_label_value(850, 326, "版本", game.version.empty() ? "-" : game.version);
         draw_label_value(850, 366, "厂商", game.author.empty() ? "-" : game.author);
         draw_label_value(850, 406, "覆盖方式", "sys-ticon");
@@ -344,7 +344,7 @@ void ui_draw_game_list(const std::vector<GameEntry>& games, int selected, const 
         }
     }
 
-    draw_footer("↑↓ 选择     A 手机编辑     X 恢复覆盖     + 退出", "NXTitleStudio 0.2.0 UI");
+    draw_footer("↑↓ 选择     A 手机编辑     X 恢复覆盖     + 退出", "NX标题工坊 0.2.1");
     end_frame();
 }
 
@@ -392,7 +392,7 @@ void ui_draw_phone_editor(const GameEntry& game, const std::string& url, const s
     draw_text(628, 294, "操作步骤", 18.0f, C_ACCENT);
     draw_text(628, 330, "1. 用手机相机扫描左侧二维码", 19.0f, C_TEXT);
     draw_text(628, 364, "2. 打开局域网页并修改内容", 19.0f, C_TEXT);
-    draw_text(628, 398, "3. 点击应用，完成后重启 Switch", 19.0f, C_TEXT);
+    draw_text(628, 398, "3. 点击应用修改，完成后重启 Switch", 19.0f, C_TEXT);
 
     draw_text(606, 458, "连接地址", 17.0f, C_MUTED);
     fill_rect(606, 488, 586, 45, C_BG);
