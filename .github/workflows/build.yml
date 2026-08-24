@@ -40,6 +40,7 @@ jobs:
           sed -i 's/A 手机编辑/A 本机修改/g' source/ui.cpp
           sed -i 's/X 恢复覆盖/Y 手机图标\/网页     X 恢复默认/g' source/ui.cpp
           python3 tools/patch_0210_footer_y.py
+          python3 tools/patch_031_version.py
       - name: Build NRO
         shell: bash
         run: |
