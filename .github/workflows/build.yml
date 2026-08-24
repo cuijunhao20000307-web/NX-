@@ -19,32 +19,45 @@ jobs:
         run: |
           chmod +x fetch_deps.sh
           ./fetch_deps.sh
-      - name: Prepare app metadata
+      - name: Prepare app metadata and realtime preview
         shell: bash
         run: |
           python3 - <<'PY'
           import base64, re
           data = open('icon.jpg.b64', 'r', encoding='utf-8').read()
           data = ''.join(re.findall(r'[A-Za-z0-9+/=]', data))
-          open('icon.jpg', 'wb').write(base64.b64decode(data + '=' * (-len(data) % 4)))
+          jpg = base64.b64decode(data + '=' * (-len(data) % 4))
+          open('icon.jpg', 'wb').write(jpg)
+          open('NXTitleStudio.jpg', 'wb').write(jpg)
           PY
+          python3 tools/patch_realtime_icon_preview.py
+          python3 tools/patch_restore_default_ok.py
+          python3 tools/patch_026_restore_version.py
+          python3 tools/patch_027_restore_icon_only.py
+          python3 tools/patch_028_reboot_option.py
+          python3 tools/patch_029_app_icon_version.py
           sed -i 's/A  手机编辑/A  本机修改/g' source/ui.cpp
           sed -i 's/A 手机编辑/A 本机修改/g' source/ui.cpp
-          sed -i 's/X 恢复覆盖/Y 手机图标\/网页     X 恢复覆盖/g' source/ui.cpp
-          sed -i 's/NX标题工坊 0.2.1/NX标题工坊 0.2.2/g' source/ui.cpp
+          sed -i 's/X 恢复覆盖/Y 手机图标\/网页     X 恢复默认/g' source/ui.cpp
+          python3 tools/patch_0210_footer_y.py
+          python3 tools/patch_031_version.py
+          python3 tools/patch_032_chinese_keyboard.py
+          python3 tools/patch_033_modified_dot.py
+          python3 tools/patch_034_batch_reboot.py
       - name: Build NRO
         shell: bash
         run: |
-          make -j2
+          make -j2 ICON=icon.jpg
           ls -lh NXTitleStudio.nro
       - name: Package
         shell: bash
         run: |
           mkdir -p dist
-          cp NXTitleStudio.nro dist/NX标题工坊.nro
+          cp NXTitleStudio.nro dist/NXTitleStudio.nro
+          cp icon.jpg dist/icon.jpg
           cp README_CN.md dist/README_CN.md
       - name: Upload NRO
         uses: actions/upload-artifact@v4
         with:
-          name: NX标题工坊-NRO
+          name: NXTitleStudio-NRO
           path: dist/
