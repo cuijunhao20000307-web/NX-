@@ -37,37 +37,78 @@ load_repl = load_snip + '''                size_t icon_size = 0;
 if 'e.icon_jpeg = safe_icon_jpeg' not in s:
     s = s.replace(load_snip, load_repl)
 
-# Make restore default practical: restore backup when available; otherwise remove only our metadata section and icon files.
+# Make restore default filesystem-safe: never fail just because a file is missing.
 start = s.find('bool restore_override(u64 title_id, std::string& error) {')
 if start >= 0:
     replacement = r'''bool restore_override(u64 title_id, std::string& error) {
     try {
         fs::path dir = fs::path("sdmc:/atmosphere/contents") / title_id_hex(title_id);
         fs::path bdir = backup_root(title_id);
+        std::error_code ec;
         bool changed = false;
 
-        if (fs::exists(bdir)) {
-            if (!restore_one(dir / "config.ini", bdir, "config.ini", error)) return false;
-            if (!restore_one(dir / "icon.jpg", bdir, "icon.jpg", error)) return false;
-            if (!restore_one(dir / "icon174.jpg", bdir, "icon174.jpg", error)) return false;
-            fs::remove_all(bdir);
+        fs::create_directories(dir, ec);
+        ec.clear();
+
+        // Restore config.ini from backup when available; otherwise just remove our [override_nacp] section.
+        fs::path cfg = dir / "config.ini";
+        fs::path backup_cfg = bdir / "config.ini";
+        fs::path absent_cfg = bdir / "config.ini.absent";
+        if (fs::exists(backup_cfg, ec)) {
+            ec.clear();
+            fs::copy_file(backup_cfg, cfg, fs::copy_options::overwrite_existing, ec);
+            if (ec) { error = "无法还原 config.ini：" + ec.message(); return false; }
             changed = true;
-        } else {
-            fs::path cfg = dir / "config.ini";
-            if (fs::exists(cfg)) {
-                std::ifstream f(cfg, std::ios::binary);
-                std::string old((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
-                old = strip_override_section(old);
-                if (old.find_first_not_of("\r\n\t ") == std::string::npos) fs::remove(cfg);
-                else { std::ofstream o(cfg, std::ios::binary | std::ios::trunc); o << old; }
-                changed = true;
+        } else if (fs::exists(absent_cfg, ec)) {
+            ec.clear();
+            fs::remove(cfg, ec);
+            changed = true;
+        } else if (fs::exists(cfg, ec)) {
+            ec.clear();
+            std::ifstream f(cfg, std::ios::binary);
+            std::string old((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+            old = strip_override_section(old);
+            if (old.find_first_not_of("\r\n\t ") == std::string::npos) {
+                fs::remove(cfg, ec);
+            } else {
+                std::ofstream o(cfg, std::ios::binary | std::ios::trunc);
+                if (!o) { error = "无法写回 config.ini"; return false; }
+                o << old;
             }
-            if (fs::exists(dir / "icon.jpg")) { fs::remove(dir / "icon.jpg"); changed = true; }
-            if (fs::exists(dir / "icon174.jpg")) { fs::remove(dir / "icon174.jpg"); changed = true; }
+            changed = true;
         }
 
-        fs::path marker = dir / ".nxtitlestudio";
-        if (fs::exists(marker)) fs::remove(marker);
+        auto restore_or_remove = [&](const char* name) -> bool {
+            std::error_code e2;
+            fs::path dst = dir / name;
+            fs::path src = bdir / name;
+            fs::path absent = bdir / (std::string(name) + ".absent");
+            if (fs::exists(src, e2)) {
+                e2.clear();
+                fs::copy_file(src, dst, fs::copy_options::overwrite_existing, e2);
+                if (e2) { error = std::string("无法还原 ") + name + "：" + e2.message(); return false; }
+                changed = true;
+            } else {
+                e2.clear();
+                if (fs::exists(dst, e2)) {
+                    e2.clear();
+                    fs::remove(dst, e2);
+                    changed = true;
+                } else if (fs::exists(absent, e2)) {
+                    changed = true;
+                }
+            }
+            return true;
+        };
+
+        if (!restore_or_remove("icon.jpg")) return false;
+        if (!restore_or_remove("icon174.jpg")) return false;
+
+        ec.clear();
+        fs::remove(dir / ".nxtitlestudio", ec);
+        ec.clear();
+        if (fs::exists(bdir, ec)) fs::remove_all(bdir, ec);
+
         if (!changed) {
             error = "没有找到可恢复的覆盖文件。";
             return false;
