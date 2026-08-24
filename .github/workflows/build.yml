@@ -14,13 +14,6 @@ jobs:
       DEVKITPRO: /opt/devkitpro
     steps:
       - uses: actions/checkout@v4
-      - name: Prepare app icon, game icons and Switch editor
-        shell: bash
-        run: |
-          base64 -d app_icon.b64 > icon.jpg
-          python3 tools/patch_game_icons.py
-          python3 tools/patch_unchanged_fields.py
-          python3 tools/patch_switch_text_editor.py
       - name: Fetch dependencies
         shell: bash
         run: |
