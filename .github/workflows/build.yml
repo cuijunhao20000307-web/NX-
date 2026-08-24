@@ -32,6 +32,7 @@ jobs:
           python3 tools/patch_restore_default_ok.py
           python3 tools/patch_026_restore_version.py
           python3 tools/patch_027_restore_icon_only.py
+          python3 tools/patch_028_reboot_option.py
           sed -i 's/A  手机编辑/A  本机修改/g' source/ui.cpp
           sed -i 's/A 手机编辑/A 本机修改/g' source/ui.cpp
           sed -i 's/X 恢复覆盖/Y 手机图标\/网页     X 恢复默认/g' source/ui.cpp
