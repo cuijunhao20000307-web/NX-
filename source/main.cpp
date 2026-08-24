@@ -24,6 +24,64 @@ static int fallback_error_screen(const std::string& error) {
     return 1;
 }
 
+static bool edit_text_field(const char* title,
+                            const char* guide,
+                            const std::string& initial,
+                            char* out,
+                            size_t out_size) {
+    if (!out || out_size == 0) return false;
+    SwkbdConfig kbd{};
+    if (R_FAILED(swkbdCreate(&kbd, 0))) return false;
+    swkbdConfigMakePresetDefault(&kbd);
+    swkbdConfigSetHeaderText(&kbd, title);
+    swkbdConfigSetGuideText(&kbd, guide);
+    swkbdConfigSetInitialText(&kbd, initial.c_str());
+    Result rc = swkbdShow(&kbd, out, out_size);
+    swkbdClose(&kbd);
+    return R_SUCCEEDED(rc);
+}
+
+static bool switch_local_edit(GameEntry& game, std::string& status) {
+    char name[768]{};
+    char author[384]{};
+    char version[64]{};
+
+    if (!edit_text_field("游戏名称", "不想修改就直接按 OK，取消则不保存", game.name, name, sizeof(name))) {
+        status = "已取消本机修改";
+        return false;
+    }
+    if (!edit_text_field("发行商 / 作者", "不想修改就直接按 OK，取消则不保存", game.author, author, sizeof(author))) {
+        status = "已取消本机修改";
+        return false;
+    }
+    if (!edit_text_field("显示版本", "不想修改就直接按 OK，取消则不保存", game.version, version, sizeof(version))) {
+        status = "已取消本机修改";
+        return false;
+    }
+
+    std::string new_name = name[0] ? std::string(name) : game.name;
+    std::string new_author = author[0] ? std::string(author) : game.author;
+    std::string new_version = version[0] ? std::string(version) : game.version;
+
+    if (new_name == game.name && new_author == game.author && new_version == game.version) {
+        status = "没有修改内容，保持原样";
+        return false;
+    }
+
+    std::string err;
+    std::vector<unsigned char> no_icon;
+    if (!apply_override(game, new_name, new_author, new_version, no_icon, err)) {
+        status = "保存失败：" + err;
+        return false;
+    }
+
+    game.name = new_name;
+    game.author = new_author;
+    game.version = new_version;
+    status = "已保存，重启 Switch 后生效";
+    return true;
+}
+
 int main(int argc, char** argv) {
     padConfigureInput(1, HidNpadStyleSet_NpadStandard);
     PadState pad;
@@ -65,6 +123,8 @@ int main(int argc, char** argv) {
                 std::string err;
                 if (restore_override(games[sel].title_id, err)) {
                     status = "已恢复覆盖，重启 Switch 后生效";
+                    games = load_games();
+                    if (sel >= (int)games.size()) sel = std::max(0, (int)games.size() - 1);
                 } else {
                     status = "恢复失败：" + err;
                 }
@@ -72,6 +132,11 @@ int main(int argc, char** argv) {
             }
 
             if (down & HidNpadButton_A) {
+                switch_local_edit(games[sel], status);
+                redraw = true;
+            }
+
+            if (down & HidNpadButton_Y) {
                 if (!net_ok) {
                     status = "网络不可用，请连接 Wi‑Fi 后重新打开";
                     redraw = true;
@@ -113,6 +178,8 @@ int main(int argc, char** argv) {
                         server.reset();
                         state.reset();
                         status = phone_status;
+                        games = load_games();
+                        if (sel >= (int)games.size()) sel = std::max(0, (int)games.size() - 1);
                         redraw = true;
                     }
                 }

@@ -16,7 +16,7 @@ INCLUDES    := include third_party
 
 APP_TITLE   := NX标题工坊
 APP_AUTHOR  := LINKO
-APP_VERSION := 0.2.1
+APP_VERSION := 0.2.2
 
 ARCH        := -march=armv8-a+crc+crypto -mtune=cortex-a57 -mtp=soft -fPIE
 CFLAGS      := -g -Wall -O2 -ffunction-sections $(ARCH) $(DEFINES)
