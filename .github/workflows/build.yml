@@ -22,7 +22,12 @@ jobs:
       - name: Prepare app metadata
         shell: bash
         run: |
-          base64 -d icon.jpg.b64 > icon.jpg
+          python3 - <<'PY'
+          import base64, re
+          data = open('icon.jpg.b64', 'r', encoding='utf-8').read()
+          data = ''.join(re.findall(r'[A-Za-z0-9+/=]', data))
+          open('icon.jpg', 'wb').write(base64.b64decode(data + '=' * (-len(data) % 4)))
+          PY
           sed -i 's/A  手机编辑/A  本机修改/g' source/ui.cpp
           sed -i 's/A 手机编辑/A 本机修改/g' source/ui.cpp
           sed -i 's/X 恢复覆盖/Y 手机图标\/网页     X 恢复覆盖/g' source/ui.cpp
