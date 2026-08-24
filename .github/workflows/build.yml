@@ -19,7 +19,7 @@ jobs:
         run: |
           chmod +x fetch_deps.sh
           ./fetch_deps.sh
-      - name: Prepare app metadata
+      - name: Prepare app metadata and realtime preview
         shell: bash
         run: |
           python3 - <<'PY'
@@ -28,10 +28,10 @@ jobs:
           data = ''.join(re.findall(r'[A-Za-z0-9+/=]', data))
           open('icon.jpg', 'wb').write(base64.b64decode(data + '=' * (-len(data) % 4)))
           PY
+          python3 tools/patch_realtime_icon_preview.py
           sed -i 's/A  手机编辑/A  本机修改/g' source/ui.cpp
           sed -i 's/A 手机编辑/A 本机修改/g' source/ui.cpp
           sed -i 's/X 恢复覆盖/Y 手机图标\/网页     X 恢复覆盖/g' source/ui.cpp
-          sed -i 's/NX标题工坊 0.2.1/NX标题工坊 0.2.2/g' source/ui.cpp
       - name: Build NRO
         shell: bash
         run: |
@@ -41,10 +41,10 @@ jobs:
         shell: bash
         run: |
           mkdir -p dist
-          cp NXTitleStudio.nro dist/NX标题工坊.nro
+          cp NXTitleStudio.nro dist/NXTitleStudio.nro
           cp README_CN.md dist/README_CN.md
       - name: Upload NRO
         uses: actions/upload-artifact@v4
         with:
-          name: NX标题工坊-NRO
+          name: NXTitleStudio-NRO
           path: dist/
