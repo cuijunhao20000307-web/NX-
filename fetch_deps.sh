@@ -13,3 +13,4 @@ fetch "https://raw.githubusercontent.com/nayuki/QR-Code-generator/master/cpp/qrc
 fetch "https://raw.githubusercontent.com/nayuki/QR-Code-generator/master/cpp/qrcodegen.cpp" qrcodegen.cpp
 fetch "https://raw.githubusercontent.com/nothings/stb/master/stb_image.h" stb_image.h
 fetch "https://raw.githubusercontent.com/nothings/stb/master/stb_image_write.h" stb_image_write.h
+fetch "https://raw.githubusercontent.com/nothings/stb/master/stb_truetype.h" stb_truetype.h
