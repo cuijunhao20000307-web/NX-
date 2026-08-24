@@ -19,6 +19,7 @@ jobs:
         run: |
           base64 -d app_icon.b64 > icon.jpg
           python3 tools/patch_game_icons.py
+          python3 tools/patch_unchanged_fields.py
       - name: Fetch dependencies
         shell: bash
         run: |
