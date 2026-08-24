@@ -14,9 +14,11 @@ SOURCES     := source third_party
 DATA        :=
 INCLUDES    := include third_party
 
-APP_TITLE   := NX标题工坊
+# Launcher-compatible metadata: some homebrew launchers skip non-ASCII NACP titles.
+# The in-app UI still shows Chinese title "NX标题工坊".
+APP_TITLE   := NXTitleStudio
 APP_AUTHOR  := LINKO
-APP_VERSION := 0.2.2
+APP_VERSION := 0.2.3
 
 ARCH        := -march=armv8-a+crc+crypto -mtune=cortex-a57 -mtp=soft -fPIE
 CFLAGS      := -g -Wall -O2 -ffunction-sections $(ARCH) $(DEFINES)
