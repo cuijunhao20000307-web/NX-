@@ -31,6 +31,7 @@ jobs:
           python3 tools/patch_realtime_icon_preview.py
           python3 tools/patch_restore_default_ok.py
           python3 tools/patch_reboot_hotkey.py
+          python3 tools/patch_026_restore_version.py
           sed -i 's/A  手机编辑/A  本机修改/g' source/ui.cpp
           sed -i 's/A 手机编辑/A 本机修改/g' source/ui.cpp
           sed -i 's/X 恢复覆盖/Y 手机图标\/网页     X 恢复覆盖/g' source/ui.cpp
