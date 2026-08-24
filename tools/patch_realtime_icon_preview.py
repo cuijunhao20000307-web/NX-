@@ -36,6 +36,50 @@ load_repl = load_snip + '''                size_t icon_size = 0;
 '''
 if 'e.icon_jpeg = safe_icon_jpeg' not in s:
     s = s.replace(load_snip, load_repl)
+
+# Make restore default practical: restore backup when available; otherwise remove only our metadata section and icon files.
+start = s.find('bool restore_override(u64 title_id, std::string& error) {')
+if start >= 0:
+    replacement = r'''bool restore_override(u64 title_id, std::string& error) {
+    try {
+        fs::path dir = fs::path("sdmc:/atmosphere/contents") / title_id_hex(title_id);
+        fs::path bdir = backup_root(title_id);
+        bool changed = false;
+
+        if (fs::exists(bdir)) {
+            if (!restore_one(dir / "config.ini", bdir, "config.ini", error)) return false;
+            if (!restore_one(dir / "icon.jpg", bdir, "icon.jpg", error)) return false;
+            if (!restore_one(dir / "icon174.jpg", bdir, "icon174.jpg", error)) return false;
+            fs::remove_all(bdir);
+            changed = true;
+        } else {
+            fs::path cfg = dir / "config.ini";
+            if (fs::exists(cfg)) {
+                std::ifstream f(cfg, std::ios::binary);
+                std::string old((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+                old = strip_override_section(old);
+                if (old.find_first_not_of("\r\n\t ") == std::string::npos) fs::remove(cfg);
+                else { std::ofstream o(cfg, std::ios::binary | std::ios::trunc); o << old; }
+                changed = true;
+            }
+            if (fs::exists(dir / "icon.jpg")) { fs::remove(dir / "icon.jpg"); changed = true; }
+            if (fs::exists(dir / "icon174.jpg")) { fs::remove(dir / "icon174.jpg"); changed = true; }
+        }
+
+        fs::path marker = dir / ".nxtitlestudio";
+        if (fs::exists(marker)) fs::remove(marker);
+        if (!changed) {
+            error = "没有找到可恢复的覆盖文件。";
+            return false;
+        }
+        return true;
+    } catch (const std::exception& e) {
+        error = e.what();
+        return false;
+    }
+}
+'''
+    s = s[:start] + replacement
 p.write_text(s, encoding='utf-8')
 
 # 3) Render the selected game's actual icon in the right-side preview box
