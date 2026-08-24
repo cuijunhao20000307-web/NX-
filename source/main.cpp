@@ -13,7 +13,7 @@ static int fallback_error_screen(const std::string& error) {
     padConfigureInput(1, HidNpadStyleSet_NpadStandard);
     PadState pad;
     padInitializeDefault(&pad);
-    std::printf("NXTitleStudio UI init failed.\n\n%s\n\nPress + to exit.\n", error.c_str());
+    std::printf("NX标题工坊 UI 初始化失败。\n\n%s\n\n按 + 退出。\n", error.c_str());
     consoleUpdate(nullptr);
     while (appletMainLoop()) {
         padUpdate(&pad);
@@ -66,7 +66,7 @@ int main(int argc, char** argv) {
                 if (restore_override(games[sel].title_id, err)) {
                     status = "已恢复覆盖，重启 Switch 后生效";
                 } else {
-                    status = "恢复失败: " + err;
+                    status = "恢复失败：" + err;
                 }
                 redraw = true;
             }
