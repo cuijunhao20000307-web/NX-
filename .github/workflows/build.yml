@@ -19,6 +19,14 @@ jobs:
         run: |
           chmod +x fetch_deps.sh
           ./fetch_deps.sh
+      - name: Prepare app metadata
+        shell: bash
+        run: |
+          base64 -d icon.jpg.b64 > icon.jpg
+          sed -i 's/A  手机编辑/A  本机修改/g' source/ui.cpp
+          sed -i 's/A 手机编辑/A 本机修改/g' source/ui.cpp
+          sed -i 's/X 恢复覆盖/Y 手机图标\/网页     X 恢复覆盖/g' source/ui.cpp
+          sed -i 's/NX标题工坊 0.2.1/NX标题工坊 0.2.2/g' source/ui.cpp
       - name: Build NRO
         shell: bash
         run: |
@@ -28,10 +36,10 @@ jobs:
         shell: bash
         run: |
           mkdir -p dist
-          cp NXTitleStudio.nro dist/NXTitleStudio.nro
+          cp NXTitleStudio.nro dist/NX标题工坊.nro
           cp README_CN.md dist/README_CN.md
       - name: Upload NRO
         uses: actions/upload-artifact@v4
         with:
-          name: NXTitleStudio-NRO
+          name: NX标题工坊-NRO
           path: dist/
