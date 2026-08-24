@@ -14,9 +14,9 @@ SOURCES     := source third_party
 DATA        :=
 INCLUDES    := include third_party
 
-APP_TITLE   := NXTitleStudio
-APP_AUTHOR  := Homebrew
-APP_VERSION := 0.1.0
+APP_TITLE   := NX标题工坊
+APP_AUTHOR  := LINKO
+APP_VERSION := 0.2.1
 
 ARCH        := -march=armv8-a+crc+crypto -mtune=cortex-a57 -mtp=soft -fPIE
 CFLAGS      := -g -Wall -O2 -ffunction-sections $(ARCH) $(DEFINES)
