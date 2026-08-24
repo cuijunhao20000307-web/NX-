@@ -43,7 +43,7 @@ static bool backup_one(const fs::path& src, const fs::path& bdir, const char* na
         else { std::ofstream m(absent, std::ios::binary); m << "absent\n"; }
         return true;
     } catch (const std::exception& e) {
-        error = std::string("Backup failed for ") + name + ": " + e.what();
+        error = std::string("备份失败（") + name + "）：" + e.what();
         return false;
     }
 }
@@ -64,7 +64,7 @@ static bool restore_one(const fs::path& dst, const fs::path& bdir, const char* n
         else if (fs::exists(absent)) fs::remove(dst);
         return true;
     } catch (const std::exception& e) {
-        error = std::string("Restore failed for ") + name + ": " + e.what();
+        error = std::string("恢复失败（") + name + "）：" + e.what();
         return false;
     }
 }
@@ -145,7 +145,7 @@ static bool write_config(const fs::path& dir,
                          const std::string& version,
                          std::string& error) {
     if (name.size() > 512 || author.size() > 256 || version.size() > 16) {
-        error = "Text too long: name<=512 bytes, author<=256, version<=16.";
+        error = "文字过长：游戏名称最多 512 字节，发行商/作者最多 256 字节，版本最多 16 字节。";
         return false;
     }
 
@@ -160,7 +160,7 @@ static bool write_config(const fs::path& dir,
 
     std::ofstream f(cfg, std::ios::binary | std::ios::trunc);
     if (!f) {
-        error = "Cannot write config.ini";
+        error = "无法写入 config.ini。";
         return false;
     }
     f << "[override_nacp]\n";
@@ -208,14 +208,14 @@ static bool encode_jpeg_limited(const fs::path& path,
                                 std::string& error) {
     for (int quality : {92, 88, 84, 80, 76, 72, 68, 64, 60, 55, 50}) {
         if (!stbi_write_jpg(path.string().c_str(), w, h, 3, rgb, quality)) {
-            error = "JPEG encode failed.";
+            error = "JPEG 编码失败。";
             return false;
         }
         std::error_code ec;
         auto sz = fs::file_size(path, ec);
         if (!ec && sz <= max_size) return true;
     }
-    error = "JPEG is still too large after compression.";
+    error = "JPEG 压缩后仍然过大。";
     return false;
 }
 
@@ -226,7 +226,7 @@ static bool write_icons(const fs::path& dir,
     int w = 0, h = 0, ch = 0;
     unsigned char* decoded = stbi_load_from_memory(bytes.data(), (int)bytes.size(), &w, &h, &ch, 3);
     if (!decoded || w <= 0 || h <= 0) {
-        error = "Unsupported image. Use PNG/JPG/WebP supported by stb_image.";
+        error = "不支持的图片格式，请使用 PNG、JPG 或 WebP。";
         if (decoded) stbi_image_free(decoded);
         return false;
     }
@@ -253,7 +253,7 @@ bool apply_override(const GameEntry& game,
         if (!backup_existing(game.title_id, dir, error)) return false;
         {
             std::ofstream marker(dir / ".nxtitlestudio", std::ios::binary | std::ios::trunc);
-            if (!marker) { error = "Cannot create safety marker."; return false; }
+            if (!marker) { error = "无法创建安全标记文件。"; return false; }
             marker << "NXTitleStudio override\n";
         }
         if (!write_config(dir, new_name, new_author, new_version, error)) {
@@ -280,7 +280,7 @@ bool restore_override(u64 title_id, std::string& error) {
         fs::path dir = fs::path("sdmc:/atmosphere/contents") / title_id_hex(title_id);
         fs::path marker = dir / ".nxtitlestudio";
         if (!fs::exists(marker)) {
-            error = "No NXTitleStudio marker found; refusing to delete unrelated overrides.";
+            error = "未找到 NX标题工坊 的安全标记，为避免误删其他覆盖文件，已取消恢复。";
             return false;
         }
 
