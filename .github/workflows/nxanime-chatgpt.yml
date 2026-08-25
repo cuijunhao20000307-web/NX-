@@ -1,0 +1,68 @@
+name: Build NXAnime ChatGPT
+
+on:
+  push:
+    branches:
+      - build-nxanime-chatgpt
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: devkitpro/devkita64:latest
+    env:
+      DEVKITPRO: /opt/devkitpro
+      PKG_CONFIG_LIBDIR: /opt/devkitpro/portlibs/switch/lib/pkgconfig
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Restore and verify source
+        shell: bash
+        run: |
+          cat nxanime_src.part00 nxanime_src.part01 nxanime_src.part02 nxanime_src.part03a nxanime_src.part03b nxanime_src.part03c nxanime_src.part03d nxanime_src.part04 | base64 -d > /tmp/nxanime.tar.xz
+          echo 'c3c3a51ce050b658ade41519ee09151e0390dfd23386122619d2d70e2e229f07  /tmp/nxanime.tar.xz' | sha256sum -c -
+          mkdir -p /tmp/nxsrc
+          tar -xJf /tmp/nxanime.tar.xz -C /tmp/nxsrc
+
+      - name: Install Switch libraries
+        shell: bash
+        run: |
+          dkp-pacman --noconfirm -S switch-curl switch-freetype switch-zlib switch-libpng switch-libjpeg-turbo switch-libwebp switch-ffmpeg switch-sdl2
+          pkg-config --modversion libavformat
+          pkg-config --modversion sdl2
+
+      - name: Apply project patches
+        shell: bash
+        working-directory: /tmp/nxsrc/NXAnime-v0.4.1-api-test
+        run: |
+          python nxanime_source/patch_v031.py
+          python nxanime_source/patch_v032.py
+          python nxanime_source/patch_v033.py
+          python nxanime_source/patch_v034.py
+          python nxanime_source/patch_v035.py
+          python nxanime_source/patch_v036.py
+          python nxanime_source/patch_v037.py
+          python nxanime_source/patch_v038.py
+          python nxanime_source/patch_v039.py
+          python nxanime_source/patch_v040.py
+          python nxanime_source/patch_v041.py
+
+      - name: Build NRO
+        shell: bash
+        working-directory: /tmp/nxsrc/NXAnime-v0.4.1-api-test
+        run: |
+          make clean || true
+          make -j2
+          test -f NXAnime.nro
+          ls -lh NXAnime.nro
+
+      - name: Package artifact
+        shell: bash
+        run: |
+          mkdir -p dist
+          cp /tmp/nxsrc/NXAnime-v0.4.1-api-test/NXAnime.nro dist/NXAnime.nro
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NXAnime-v0.4.1-api-test-chatgpt
+          path: dist/NXAnime.nro
