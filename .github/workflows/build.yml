@@ -17,12 +17,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Switch libraries
+      - name: Install Switch libraries and wiliwili libmpv
         shell: bash
         run: |
-          dkp-pacman --noconfirm -S switch-curl switch-freetype switch-zlib switch-libpng switch-libjpeg-turbo switch-libwebp switch-ffmpeg switch-sdl2
-          pkg-config --modversion libavformat
-          pkg-config --modversion sdl2
+          dkp-pacman --noconfirm -S switch-curl switch-freetype switch-zlib switch-libpng switch-libjpeg-turbo switch-libwebp switch-mesa switch-liblua51
+          BASE_URL="https://github.com/xfangfang/wiliwili/releases/download/v0.1.0"
+          curl -L --fail -o /tmp/switch-ffmpeg.pkg.tar.zst "$BASE_URL/switch-ffmpeg-7.1-1-any.pkg.tar.zst"
+          curl -L --fail -o /tmp/switch-libmpv.pkg.tar.zst "$BASE_URL/switch-libmpv-0.36.0-3-any.pkg.tar.zst"
+          dkp-pacman -U --noconfirm /tmp/switch-ffmpeg.pkg.tar.zst /tmp/switch-libmpv.pkg.tar.zst
+          pkg-config --modversion mpv
 
       - name: Apply patches
         shell: bash
@@ -39,6 +42,7 @@ jobs:
           python nxanime_source/patch_v040.py
           python nxanime_source/patch_v041.py
           python nxanime_source/patch_v042.py
+          python nxanime_source/patch_v050.py
 
       - name: Build
         shell: bash
@@ -56,5 +60,5 @@ jobs:
       - name: Upload NRO
         uses: actions/upload-artifact@v4
         with:
-          name: NXAnime-v0.4.2-mobile-identity
+          name: NXAnime-v0.5.0-libmpv
           path: dist/
