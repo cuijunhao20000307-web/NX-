@@ -26,35 +26,49 @@ jobs:
           pkg-config --modversion libpng
           pkg-config --modversion libwebp
 
-      - name: Apply v0.3.1 fixes
+      - name: Probe GiriGiri search
         shell: bash
         run: |
-          python nxanime_source/patch_v031.py
+          URL='https://ani.girigirilove.com/search/-------------/?wd=%E4%B8%9C%E4%BA%AC'
+          curl -L -sS --max-time 20 -c /tmp/giri.cookies -b /tmp/giri.cookies \
+            -A 'Mozilla/5.0 (Nintendo Switch; NXAnime) AppleWebKit/605.1.15 Version/17.0 Safari/605.1.15' \
+            -e 'https://ani.girigirilove.com/' \
+            'https://ani.girigirilove.com/' -o /tmp/home.html || true
+          curl -L -sS --max-time 20 -c /tmp/giri.cookies -b /tmp/giri.cookies \
+            -A 'Mozilla/5.0 (Nintendo Switch; NXAnime) AppleWebKit/605.1.15 Version/17.0 Safari/605.1.15' \
+            -e 'https://ani.girigirilove.com/' \
+            "$URL" -o /tmp/search.html || true
+          echo "SEARCH_BYTES=$(wc -c </tmp/search.html 2>/dev/null || echo 0)"
+          echo "SEARCH_GV=$(grep -o 'GV[0-9]\+' /tmp/search.html 2>/dev/null | sort -u | wc -l || true)"
+          grep -o '非法请求\|系统提示\|东京[^<]*' /tmp/search.html 2>/dev/null | head -10 || true
+
+      - name: Apply v0.3.1 fixes
+        shell: bash
+        run: python nxanime_source/patch_v031.py
 
       - name: Apply v0.3.2 search fixes
         shell: bash
-        run: |
-          python nxanime_source/patch_v032.py
+        run: python nxanime_source/patch_v032.py
 
       - name: Apply v0.3.3 input fixes
         shell: bash
-        run: |
-          python nxanime_source/patch_v033.py
+        run: python nxanime_source/patch_v033.py
 
       - name: Apply v0.3.4 filter fixes
         shell: bash
-        run: |
-          python nxanime_source/patch_v034.py
+        run: python nxanime_source/patch_v034.py
 
       - name: Apply v0.3.5 search return fixes
         shell: bash
-        run: |
-          python nxanime_source/patch_v035.py
+        run: python nxanime_source/patch_v035.py
 
       - name: Apply v0.3.6 fuzzy search
         shell: bash
-        run: |
-          python nxanime_source/patch_v036.py
+        run: python nxanime_source/patch_v036.py
+
+      - name: Apply v0.3.7 session search fix
+        shell: bash
+        run: python nxanime_source/patch_v037.py
 
       - name: Build
         shell: bash
@@ -72,5 +86,5 @@ jobs:
       - name: Upload NRO
         uses: actions/upload-artifact@v4
         with:
-          name: NXAnime-v0.3.6-fuzzy-search
+          name: NXAnime-v0.3.7-search-session
           path: dist/
