@@ -7,7 +7,7 @@ extern "C" {
 #include "proxy.h"
 }
 
-// Internal fallback used by the v0.2 HOS-font renderer during compilation.
+// Internal fallback used by the HOS-font renderer during compilation.
 // Runtime text sizing is still supplied per draw call.
 static const int px = 16;
 
@@ -16,6 +16,7 @@ struct AnimeItem {
     std::string title;
     std::string url;
     std::string extra;
+    std::string cover_url;
 };
 
 struct EpisodeItem {
@@ -29,6 +30,7 @@ struct AnimeDetail {
     std::string status;
     std::string description;
     std::string url;
+    std::string cover_url;
     std::vector<EpisodeItem> episodes;
 };
 
