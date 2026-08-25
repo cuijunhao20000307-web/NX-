@@ -1,0 +1,36 @@
+name: Package NXAnime v0.4.0 Source
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - build/nxanime-v01
+    paths:
+      - '.github/workflows/package_v040_source.yml'
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact v0.4.0 source commit
+        uses: actions/checkout@v4
+        with:
+          ref: 630b9443f49f29e1288c0ca7510068a64974e766
+
+      - name: Package source
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p dist/NXAnime-v0.4.0-source
+          shopt -s dotglob extglob
+          cp -a !(.git|dist) dist/NXAnime-v0.4.0-source/
+          cd dist
+          zip -qr NXAnime-v0.4.0-source.zip NXAnime-v0.4.0-source
+          ls -lh NXAnime-v0.4.0-source.zip
+
+      - name: Upload source ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: NXAnime-v0.4.0-source
+          path: dist/NXAnime-v0.4.0-source.zip
+          if-no-files-found: error
