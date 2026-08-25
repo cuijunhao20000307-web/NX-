@@ -51,6 +51,11 @@ jobs:
         run: |
           python nxanime_source/patch_v035.py
 
+      - name: Apply v0.3.6 fuzzy search
+        shell: bash
+        run: |
+          python nxanime_source/patch_v036.py
+
       - name: Build
         shell: bash
         run: |
@@ -67,5 +72,5 @@ jobs:
       - name: Upload NRO
         uses: actions/upload-artifact@v4
         with:
-          name: NXAnime-v0.3.5-searchfix
+          name: NXAnime-v0.3.6-fuzzy-search
           path: dist/
