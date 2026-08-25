@@ -15,10 +15,10 @@ INCLUDES    := nxanime_source
 
 APP_TITLE   := NXAnime
 APP_AUTHOR  := LINKO
-APP_VERSION := 0.2.1
+APP_VERSION := 0.3.0
 
-PKG_CFLAGS  := $(shell pkg-config --cflags freetype2 libcurl 2>/dev/null)
-PKG_LIBS    := $(shell pkg-config --libs --static libcurl freetype2 2>/dev/null)
+PKG_CFLAGS  := $(shell pkg-config --cflags freetype2 libcurl libpng libwebp 2>/dev/null)
+PKG_LIBS    := $(shell pkg-config --libs --static libcurl freetype2 libpng libwebp 2>/dev/null)
 
 ARCH        := -march=armv8-a+crc+crypto -mtune=cortex-a57 -mtp=soft -fPIE
 CFLAGS      := -g -Wall -O2 -ffunction-sections $(ARCH) $(DEFINES) $(PKG_CFLAGS)
@@ -26,7 +26,7 @@ CFLAGS      += $(INCLUDE) -D__SWITCH__
 CXXFLAGS    := $(CFLAGS) -std=gnu++17 -fno-rtti -fno-exceptions
 ASFLAGS     := -g $(ARCH)
 LDFLAGS     := -specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
-LIBS        := $(PKG_LIBS) -lnx
+LIBS        := $(PKG_LIBS) -ljpeg -lnx
 LIBDIRS     := $(PORTLIBS) $(LIBNX)
 
 ifneq ($(BUILD),$(notdir $(CURDIR)))
