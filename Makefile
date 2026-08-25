@@ -1,61 +1,75 @@
-# NXTitleStudio - Nintendo Switch homebrew
-# Requires devkitA64 + libnx (devkitPro)
-
+# NXFlix Web Launcher v1.1.0
 ifeq ($(strip $(DEVKITPRO)),)
-$(error "Please set DEVKITPRO in your environment. export DEVKITPRO=/opt/devkitpro")
+$(error "DEVKITPRO is not set")
 endif
 
 TOPDIR ?= $(CURDIR)
 include $(DEVKITPRO)/libnx/switch_rules
 
-TARGET      := NXTitleStudio
+TARGET      := NXFlixWeb
 BUILD       := build
-SOURCES     := source third_party
+SOURCES     := nxflix_source
 DATA        :=
-INCLUDES    := include third_party
+INCLUDES    :=
 
-APP_TITLE   := NXTitleStudio
-APP_AUTHOR  := Homebrew
-APP_VERSION := 0.1.0
+APP_TITLE   := NXFlix Web Launcher
+APP_AUTHOR  := LINKO
+APP_VERSION := 1.1.0
 
 ARCH        := -march=armv8-a+crc+crypto -mtune=cortex-a57 -mtp=soft -fPIE
 CFLAGS      := -g -Wall -O2 -ffunction-sections $(ARCH) $(DEFINES)
 CFLAGS      += $(INCLUDE) -D__SWITCH__
-CXXFLAGS    := $(CFLAGS) -std=gnu++17 -fno-rtti -pthread
+CXXFLAGS    := $(CFLAGS) -fno-rtti -fno-exceptions
 ASFLAGS     := -g $(ARCH)
-LDFLAGS     := -specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -pthread -Wl,-Map,$(notdir $*.map)
+LDFLAGS     := -specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 LIBS        := -lnx
-
 LIBDIRS     := $(PORTLIBS) $(LIBNX)
 
 ifneq ($(BUILD),$(notdir $(CURDIR)))
-export OUTPUT := $(CURDIR)/$(TARGET)
-export TOPDIR := $(CURDIR)
-export VPATH := $(foreach dir,$(SOURCES),$(CURDIR)/$(dir))
-export DEPSDIR := $(CURDIR)/$(BUILD)
+export OUTPUT   := $(CURDIR)/$(TARGET)
+export TOPDIR   := $(CURDIR)
+export VPATH    := $(foreach dir,$(SOURCES),$(CURDIR)/$(dir))
+export DEPSDIR  := $(CURDIR)/$(BUILD)
+
 CFILES   := $(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.c)))
 CPPFILES := $(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.cpp)))
 SFILES   := $(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.s)))
-BINFILES := $(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*)))
-export OFILES_BIN := $(addsuffix .o,$(BINFILES))
-export OFILES_SRC := $(CPPFILES:.cpp=.o) $(CFILES:.c=.o) $(SFILES:.s=.o)
-export OFILES := $(OFILES_BIN) $(OFILES_SRC)
-export HFILES_BIN := $(addsuffix .h,$(subst .,_,$(BINFILES)))
+
+ifeq ($(strip $(CPPFILES)),)
+export LD := $(CC)
+else
+export LD := $(CXX)
+endif
+
+export OFILES := $(CPPFILES:.cpp=.o) $(CFILES:.c=.o) $(SFILES:.s=.o)
 export INCLUDE := $(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
                   $(foreach dir,$(LIBDIRS),-I$(dir)/include) \
                   -I$(CURDIR)/$(BUILD)
 export LIBPATHS := $(foreach dir,$(LIBDIRS),-L$(dir)/lib)
-.PHONY: $(BUILD) clean all
+
+export APP_ICON := $(TOPDIR)/icon.jpg
+export NROFLAGS += --icon=$(APP_ICON)
+export NROFLAGS += --nacp=$(CURDIR)/$(TARGET).nacp
+
+.PHONY: all clean $(BUILD)
 all: $(BUILD)
+
 $(BUILD):
 	@[ -d $@ ] || mkdir -p $@
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
+
 clean:
-	@echo clean ...
-	@rm -fr $(BUILD) $(TARGET).pfs0 $(TARGET).nro $(TARGET).nso $(TARGET).elf
+	@rm -rf $(BUILD) $(TARGET).nro $(TARGET).nacp $(TARGET).elf $(TARGET).map
+
 else
+
 DEPENDS := $(OFILES:.o=.d)
-$(OUTPUT).nro : $(OUTPUT).elf
-$(OUTPUT).elf : $(OFILES)
+
+.PHONY: all
+all: $(OUTPUT).nro
+
+$(OUTPUT).nro: $(OUTPUT).elf $(OUTPUT).nacp
+$(OUTPUT).elf: $(OFILES)
+
 -include $(DEPENDS)
 endif
