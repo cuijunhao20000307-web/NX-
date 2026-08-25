@@ -39,3 +39,7 @@ void cover_draw_fit(std::uint32_t* framebuffer,
                     int y,
                     int width,
                     int height);
+
+// Empty-catalog placeholder overload. The normal catalog path uses the
+// State-aware renderer in main.cpp; this keeps the no-items path harmless.
+inline void draw_cover_panel(std::uint32_t*, int, int, int, int) {}
