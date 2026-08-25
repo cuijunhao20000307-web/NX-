@@ -1,4 +1,4 @@
-name: Build NXAnime NRO
+name: Probe GiriGiri Search
 
 on:
   workflow_dispatch:
@@ -7,84 +7,28 @@ on:
       - build/nxanime-v01
 
 jobs:
-  build:
+  probe:
     runs-on: ubuntu-latest
-    container:
-      image: devkitpro/devkita64:latest
-    env:
-      DEVKITPRO: /opt/devkitpro
-      PKG_CONFIG_LIBDIR: /opt/devkitpro/portlibs/switch/lib/pkgconfig
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Switch libraries
+      - name: Inspect current search form
         shell: bash
         run: |
-          dkp-pacman --noconfirm -S switch-curl switch-freetype switch-zlib switch-libpng switch-libjpeg-turbo switch-libwebp
-          pkg-config --modversion libcurl
-          pkg-config --modversion freetype2
-          pkg-config --modversion libpng
-          pkg-config --modversion libwebp
-
-      - name: Probe GiriGiri search
-        shell: bash
-        run: |
-          URL='https://ani.girigirilove.com/search/-------------/?wd=%E4%B8%9C%E4%BA%AC'
-          curl -L -sS --max-time 20 -c /tmp/giri.cookies -b /tmp/giri.cookies \
-            -A 'Mozilla/5.0 (Nintendo Switch; NXAnime) AppleWebKit/605.1.15 Version/17.0 Safari/605.1.15' \
-            -e 'https://ani.girigirilove.com/' \
-            'https://ani.girigirilove.com/' -o /tmp/home.html || true
-          curl -L -sS --max-time 20 -c /tmp/giri.cookies -b /tmp/giri.cookies \
-            -A 'Mozilla/5.0 (Nintendo Switch; NXAnime) AppleWebKit/605.1.15 Version/17.0 Safari/605.1.15' \
-            -e 'https://ani.girigirilove.com/' \
-            "$URL" -o /tmp/search.html || true
-          echo "SEARCH_BYTES=$(wc -c </tmp/search.html 2>/dev/null || echo 0)"
-          echo "SEARCH_GV=$(grep -o 'GV[0-9]\+' /tmp/search.html 2>/dev/null | sort -u | wc -l || true)"
-          grep -o '非法请求\|系统提示\|东京[^<]*' /tmp/search.html 2>/dev/null | head -10 || true
-
-      - name: Apply v0.3.1 fixes
-        shell: bash
-        run: python nxanime_source/patch_v031.py
-
-      - name: Apply v0.3.2 search fixes
-        shell: bash
-        run: python nxanime_source/patch_v032.py
-
-      - name: Apply v0.3.3 input fixes
-        shell: bash
-        run: python nxanime_source/patch_v033.py
-
-      - name: Apply v0.3.4 filter fixes
-        shell: bash
-        run: python nxanime_source/patch_v034.py
-
-      - name: Apply v0.3.5 search return fixes
-        shell: bash
-        run: python nxanime_source/patch_v035.py
-
-      - name: Apply v0.3.6 fuzzy search
-        shell: bash
-        run: python nxanime_source/patch_v036.py
-
-      - name: Apply v0.3.7 session search fix
-        shell: bash
-        run: python nxanime_source/patch_v037.py
-
-      - name: Build
-        shell: bash
-        run: |
-          make clean
-          make -j2
-          ls -lh NXAnime.nro
-
-      - name: Package
-        shell: bash
-        run: |
-          mkdir -p dist
-          cp NXAnime.nro dist/NXAnime.nro
-
-      - name: Upload NRO
-        uses: actions/upload-artifact@v4
-        with:
-          name: NXAnime-v0.3.7-search-session
-          path: dist/
+          curl -L -sS --max-time 20 -A 'Mozilla/5.0' 'https://ani.girigirilove.com/' -o /tmp/home.html
+          echo '--- FORM TAGS ---'
+          grep -oE '<form[^>]*>' /tmp/home.html | head -30 || true
+          echo '--- WD CONTEXT ---'
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('/tmp/home.html').read_text(errors='ignore')
+          for key in ['name="wd"', "name='wd'", 'search', 'vod/search', '/search/']:
+              print('\nKEY', key)
+              p=0
+              n=0
+              while True:
+                  i=s.find(key,p)
+                  if i<0 or n>=10: break
+                  print(s[max(0,i-220):i+320].replace('\n',' '))
+                  p=i+len(key);n+=1
+          PY
+          echo '--- JS URL CANDIDATES ---'
+          grep -oE 'https?://[^"'"' ]+|/[A-Za-z0-9_./?=&-]*search[A-Za-z0-9_./?=&-]*' /tmp/home.html | sort -u | head -80 || true
