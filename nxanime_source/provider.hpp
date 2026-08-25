@@ -41,6 +41,11 @@ bool provider_fetch_home(const ProxyConfig& proxy,
                          std::vector<AnimeItem>& out,
                          std::string& status);
 
+bool provider_search(const ProxyConfig& proxy,
+                     const std::string& query,
+                     std::vector<AnimeItem>& out,
+                     std::string& status);
+
 bool provider_fetch_detail(const ProxyConfig& proxy,
                            const AnimeItem& item,
                            AnimeDetail& out,
