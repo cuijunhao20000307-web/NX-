@@ -31,6 +31,11 @@ jobs:
         run: |
           python nxanime_source/patch_v031.py
 
+      - name: Apply v0.3.2 search fixes
+        shell: bash
+        run: |
+          python nxanime_source/patch_v032.py
+
       - name: Build
         shell: bash
         run: |
@@ -47,5 +52,5 @@ jobs:
       - name: Upload NRO
         uses: actions/upload-artifact@v4
         with:
-          name: NXAnime-v0.3.1-fixed
+          name: NXAnime-v0.3.2-search
           path: dist/
