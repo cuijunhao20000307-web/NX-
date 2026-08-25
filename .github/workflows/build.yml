@@ -33,6 +33,7 @@ jobs:
           python nxanime_source/patch_v036.py
           python nxanime_source/patch_v037.py
           python nxanime_source/patch_v038.py
+          python nxanime_source/patch_v039.py
 
       - name: Build
         shell: bash
@@ -50,5 +51,5 @@ jobs:
       - name: Upload NRO
         uses: actions/upload-artifact@v4
         with:
-          name: NXAnime-v0.3.8-search-ui
+          name: NXAnime-v0.3.9-chinese-startup
           path: dist/
