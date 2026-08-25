@@ -10,22 +10,19 @@ jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
-      - name: Inspect search javascript
+      - name: Probe ajax suggest
         shell: bash
         run: |
           set +e
-          curl -L -sS --max-time 20 -A 'Mozilla/5.0' 'https://ani.girigirilove.com/template/dsn2/static/js/script.js?version=4878' -o /tmp/script.js
-          echo "JS_BYTES=$(wc -c </tmp/script.js)"
-          python - <<'PY'
-          from pathlib import Path
-          s=Path('/tmp/script.js').read_text(errors='ignore')
-          for key in ['searchInputConvert','mac_wd','search-input-sub','/search/','search_auto']:
-              print('\n===', key, '===')
-              p=0;n=0
-              while True:
-                  i=s.find(key,p)
-                  if i<0 or n>=12: break
-                  print(s[max(0,i-700):i+1200].replace('\n',' '))
-                  p=i+len(key);n+=1
-          PY
+          UA='Mozilla/5.0 (Nintendo Switch; NXAnime) AppleWebKit/605.1.15 Version/17.0 Safari/605.1.15'
+          for URL in \
+            'https://ani.girigirilove.com/index.php/ajax/suggest?mid=1&wd=%E4%B8%9C%E4%BA%AC' \
+            'https://ani.girigirilove.com/index.php/ajax/suggest?mid=1&wd=%E9%AC%BC%E7%81%AD' \
+            'https://ani.girigirilove.com/index.php/ajax/suggest?mid=1&wd=%E8%BE%89%E5%A4%9C'
+          do
+            echo "=== $URL ==="
+            curl -L -sS --max-time 20 -A "$UA" -e 'https://ani.girigirilove.com/' "$URL" -o /tmp/r
+            echo "bytes=$(wc -c </tmp/r)"
+            head -c 2500 /tmp/r; echo
+          done
           exit 0
