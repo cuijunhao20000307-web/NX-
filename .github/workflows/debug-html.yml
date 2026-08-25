@@ -12,9 +12,10 @@ jobs:
         run: |
           python - <<'PY'
           import urllib.request
-          html=urllib.request.urlopen('https://ani.girigirilove.com/',timeout=20).read().decode('utf-8','replace')
+          req=urllib.request.Request('https://ani.girigirilove.com/',headers={'User-Agent':'Mozilla/5.0'})
+          html=urllib.request.urlopen(req,timeout=20).read().decode('utf-8','replace')
           for key in ['GV27100','GV27099','GV27114']:
               p=html.find(key)
               print('\n===',key,'pos',p,'===')
-              if p>=0: print(html[max(0,p-1200):p+2200])
+              if p>=0: print(html[max(0,p-1000):p+1800])
           PY
