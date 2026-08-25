@@ -10,25 +10,20 @@ jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
-      - name: Inspect current search form
+      - name: Probe SEO search route
         shell: bash
         run: |
-          curl -L -sS --max-time 20 -A 'Mozilla/5.0' 'https://ani.girigirilove.com/' -o /tmp/home.html
-          echo '--- FORM TAGS ---'
-          grep -oE '<form[^>]*>' /tmp/home.html | head -30 || true
-          echo '--- WD CONTEXT ---'
-          python - <<'PY'
-          from pathlib import Path
-          s=Path('/tmp/home.html').read_text(errors='ignore')
-          for key in ['name="wd"', "name='wd'", 'search', 'vod/search', '/search/']:
-              print('\nKEY', key)
-              p=0
-              n=0
-              while True:
-                  i=s.find(key,p)
-                  if i<0 or n>=10: break
-                  print(s[max(0,i-220):i+320].replace('\n',' '))
-                  p=i+len(key);n+=1
-          PY
-          echo '--- JS URL CANDIDATES ---'
-          grep -oE 'https?://[^"'"' ]+|/[A-Za-z0-9_./?=&-]*search[A-Za-z0-9_./?=&-]*' /tmp/home.html | sort -u | head -80 || true
+          set +e
+          UA='Mozilla/5.0 (Nintendo Switch; NXAnime) AppleWebKit/605.1.15 Version/17.0 Safari/605.1.15'
+          curl -L -sS --max-time 20 -A "$UA" -c /tmp/c -b /tmp/c 'https://ani.girigirilove.com/' -o /tmp/home.html
+          for URL in \
+            'https://ani.girigirilove.com/search/-------------/?wd=%E4%B8%9C%E4%BA%AC' \
+            'https://ani.girigirilove.com/search/%E4%B8%9C%E4%BA%AC-------------/' \
+            'https://ani.girigirilove.com/search/%E6%9D%B1%E4%BA%AC-------------/'
+          do
+            echo "=== $URL ==="
+            curl -L -sS --max-time 20 -A "$UA" -e 'https://ani.girigirilove.com/' -c /tmp/c -b /tmp/c "$URL" -o /tmp/r.html
+            echo "bytes=$(wc -c </tmp/r.html) gv=$(grep -o 'GV[0-9]\+' /tmp/r.html | sort -u | wc -l)"
+            grep -o '系统提示\|非法请求\|东京[^<]*\|東京[^<]*' /tmp/r.html | head -10
+          done
+          exit 0
