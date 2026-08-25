@@ -46,6 +46,16 @@ bool provider_search(const ProxyConfig& proxy,
                      std::vector<AnimeItem>& out,
                      std::string& status);
 
+bool provider_filter(const ProxyConfig& proxy,
+                     int channel_id,
+                     const std::string& genre,
+                     const std::string& quarter,
+                     const std::string& year,
+                     const std::string& language,
+                     const std::string& sort_by,
+                     std::vector<AnimeItem>& out,
+                     std::string& status);
+
 bool provider_fetch_detail(const ProxyConfig& proxy,
                            const AnimeItem& item,
                            AnimeDetail& out,
