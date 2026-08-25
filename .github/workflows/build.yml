@@ -20,9 +20,11 @@ jobs:
       - name: Install Switch libraries
         shell: bash
         run: |
-          dkp-pacman --noconfirm -S switch-curl switch-freetype switch-zlib
+          dkp-pacman --noconfirm -S switch-curl switch-freetype switch-zlib switch-libpng switch-libjpeg-turbo switch-libwebp
           pkg-config --modversion libcurl
           pkg-config --modversion freetype2
+          pkg-config --modversion libpng
+          pkg-config --modversion libwebp
 
       - name: Build
         shell: bash
@@ -40,5 +42,5 @@ jobs:
       - name: Upload NRO
         uses: actions/upload-artifact@v4
         with:
-          name: NXAnime-v0.1
+          name: NXAnime-v0.3-cover
           path: dist/
