@@ -11,11 +11,11 @@ include $(DEVKITPRO)/libnx/switch_rules
 TARGET      := NXFlixNative
 BUILD       := build
 SOURCES     := nxflix_source
-INCLUDES    :=
+INCLUDES    := nxflix_source
 
 APP_TITLE   := NXFlix Native
 APP_AUTHOR  := LINKO
-APP_VERSION := 2.0.0
+APP_VERSION := 2.1.0
 
 ARCH        := -march=armv8-a+crc+crypto -mtune=cortex-a57 -mtp=soft -fPIE
 CFLAGS      := -g -Wall -O2 -ffunction-sections $(ARCH) $(DEFINES)
