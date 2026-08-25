@@ -1,0 +1,82 @@
+name: Build WebEngine Test
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - build/nxanime-v01
+    paths:
+      - '.github/workflows/build_webengine_test.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: devkitpro/devkita64:latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cat /etc/os-release || true
+          pacman -Syu --noconfirm --needed git make pkgconf python flex bison gperf perl unzip zip || true
+          dkp-pacman --noconfirm -S \
+            switch-sdl2 switch-curl switch-freetype switch-zlib \
+            switch-libpng switch-libjpeg-turbo switch-libwebp \
+            switch-mbedtls switch-libxml2 switch-libiconv || true
+
+      - name: Clone NetSurf Switch
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git clone --depth 1 https://github.com/etonedemid/netsurf-switch.git /tmp/netsurf-switch
+          cd /tmp/netsurf-switch
+          git rev-parse HEAD
+          find netsurf/frontends/framebuffer -maxdepth 2 -type f | head -80
+
+      - name: Build NetSurf Switch
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cd /tmp/netsurf-switch
+          export NSPORT_ROOT=/tmp
+          source ./env-switch.sh
+          export BUILD=x86_64-pc-linux-gnu
+          export HOST=aarch64-none-elf
+          make TARGET=framebuffer HOST="$HOST" BUILD="$BUILD" V=1 -j2
+
+      - name: Find build outputs
+        if: always()
+        shell: bash
+        run: |
+          set -x
+          cd /tmp/netsurf-switch || exit 0
+          find . -type f \( -name '*.nro' -o -name '*.elf' -o -name 'netsurf' \) -print -exec ls -lh {} \; | tail -100 || true
+
+      - name: Package output
+        if: success()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p "$GITHUB_WORKSPACE/dist"
+          NRO="$(find /tmp/netsurf-switch -type f -name '*.nro' | head -1 || true)"
+          if [ -z "$NRO" ]; then
+            echo 'No NRO produced by build' >&2
+            exit 1
+          fi
+          cp "$NRO" "$GITHUB_WORKSPACE/dist/NXAnime_WebEngine_Test.nro"
+          printf '%s\n' \
+            'NXAnime WebEngine Test' \
+            'Browser engine: NetSurf for Nintendo Switch + QuickJS' \
+            'Source: https://github.com/etonedemid/netsurf-switch' \
+            'This test validates normal public webpage/JavaScript compatibility only.' \
+            > "$GITHUB_WORKSPACE/dist/SOURCE.txt"
+
+      - name: Upload WebEngine test
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: NXAnime-WebEngine-Test
+          path: dist/
