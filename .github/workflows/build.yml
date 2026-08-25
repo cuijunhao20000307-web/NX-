@@ -1,4 +1,4 @@
-name: Probe GiriGiri Search
+name: Build NXAnime NRO
 
 on:
   workflow_dispatch:
@@ -7,22 +7,48 @@ on:
       - build/nxanime-v01
 
 jobs:
-  probe:
+  build:
     runs-on: ubuntu-latest
+    container:
+      image: devkitpro/devkita64:latest
+    env:
+      DEVKITPRO: /opt/devkitpro
+      PKG_CONFIG_LIBDIR: /opt/devkitpro/portlibs/switch/lib/pkgconfig
     steps:
-      - name: Probe ajax suggest
+      - uses: actions/checkout@v4
+
+      - name: Install Switch libraries
         shell: bash
         run: |
-          set +e
-          UA='Mozilla/5.0 (Nintendo Switch; NXAnime) AppleWebKit/605.1.15 Version/17.0 Safari/605.1.15'
-          for URL in \
-            'https://ani.girigirilove.com/index.php/ajax/suggest?mid=1&wd=%E4%B8%9C%E4%BA%AC' \
-            'https://ani.girigirilove.com/index.php/ajax/suggest?mid=1&wd=%E9%AC%BC%E7%81%AD' \
-            'https://ani.girigirilove.com/index.php/ajax/suggest?mid=1&wd=%E8%BE%89%E5%A4%9C'
-          do
-            echo "=== $URL ==="
-            curl -L -sS --max-time 20 -A "$UA" -e 'https://ani.girigirilove.com/' "$URL" -o /tmp/r
-            echo "bytes=$(wc -c </tmp/r)"
-            head -c 2500 /tmp/r; echo
-          done
-          exit 0
+          dkp-pacman --noconfirm -S switch-curl switch-freetype switch-zlib switch-libpng switch-libjpeg-turbo switch-libwebp
+
+      - name: Apply patches
+        shell: bash
+        run: |
+          python nxanime_source/patch_v031.py
+          python nxanime_source/patch_v032.py
+          python nxanime_source/patch_v033.py
+          python nxanime_source/patch_v034.py
+          python nxanime_source/patch_v035.py
+          python nxanime_source/patch_v036.py
+          python nxanime_source/patch_v037.py
+          python nxanime_source/patch_v038.py
+
+      - name: Build
+        shell: bash
+        run: |
+          make clean
+          make -j2
+          ls -lh NXAnime.nro
+
+      - name: Package
+        shell: bash
+        run: |
+          mkdir -p dist
+          cp NXAnime.nro dist/NXAnime.nro
+
+      - name: Upload NRO
+        uses: actions/upload-artifact@v4
+        with:
+          name: NXAnime-v0.3.8-search-ui
+          path: dist/
