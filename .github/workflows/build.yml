@@ -1,11 +1,10 @@
-name: Build NXFlix Native NRO
+name: Build NXAnime NRO
 
 on:
-  pull_request:
   workflow_dispatch:
   push:
     branches:
-      - build/nxflix-native-v2
+      - build/nxanime-v01
 
 jobs:
   build:
@@ -14,20 +13,32 @@ jobs:
       image: devkitpro/devkita64:latest
     env:
       DEVKITPRO: /opt/devkitpro
+      PKG_CONFIG_LIBDIR: /opt/devkitpro/portlibs/switch/lib/pkgconfig
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install Switch libraries
+        shell: bash
+        run: |
+          dkp-pacman --noconfirm -S switch-curl switch-freetype switch-zlib
+          pkg-config --modversion libcurl
+          pkg-config --modversion freetype2
+
       - name: Build
         shell: bash
         run: |
+          make clean
           make -j2
-          ls -lh NXFlixNative.nro
+          ls -lh NXAnime.nro
+
       - name: Package
         shell: bash
         run: |
           mkdir -p dist
-          cp NXFlixNative.nro dist/NXFlixNative.nro
+          cp NXAnime.nro dist/NXAnime.nro
+
       - name: Upload NRO
         uses: actions/upload-artifact@v4
         with:
-          name: NXFlixNative-v2
+          name: NXAnime-v0.1
           path: dist/
