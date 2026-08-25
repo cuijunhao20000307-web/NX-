@@ -1,0 +1,29 @@
+name: Package NXAnime WebEngine Test
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - build/nxanime-v01
+    paths:
+      - '.github/workflows/webengine_test.yml'
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download NetSurf Switch WebEngine
+        shell: bash
+        run: |
+          set -euxo pipefail
+          curl -L --fail --retry 3 -o NXAnime_WebEngine_Test.nro \
+            https://github.com/etonedemid/netsurf-switch/releases/download/v0.1.0/netsurf.nro
+          echo 'c5c2b8f780f9a7d9e67ed1d490232e5e1fe0025ef2f137caa69f22f1d804bacf  NXAnime_WebEngine_Test.nro' | sha256sum -c -
+          ls -lh NXAnime_WebEngine_Test.nro
+
+      - name: Upload WebEngine test NRO
+        uses: actions/upload-artifact@v4
+        with:
+          name: NXAnime-WebEngine-Test
+          path: NXAnime_WebEngine_Test.nro
+          if-no-files-found: error
