@@ -15,7 +15,7 @@ INCLUDES    := nxanime_source
 
 APP_TITLE   := NXAnime
 APP_AUTHOR  := LINKO
-APP_VERSION := 0.2.0
+APP_VERSION := 0.2.1
 
 PKG_CFLAGS  := $(shell pkg-config --cflags freetype2 libcurl 2>/dev/null)
 PKG_LIBS    := $(shell pkg-config --libs --static libcurl freetype2 2>/dev/null)
