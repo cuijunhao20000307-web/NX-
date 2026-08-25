@@ -57,7 +57,7 @@ static bool http_get(const std::string& url,
     curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 6L);
     curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 8L);
     curl_easy_setopt(curl, CURLOPT_TIMEOUT, 15L);
-    curl_easy_setopt(curl, CURLOPT_USERAGENT, "NXAnime/0.1 NintendoSwitch");
+    curl_easy_setopt(curl, CURLOPT_USERAGENT, "NXAnime/0.3 NintendoSwitch");
     curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, "");
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_cb);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &body);
@@ -121,7 +121,11 @@ static std::string strip_tags(const std::string& s) {
     bool last_space = false;
     for (char ch : s) {
         if (ch == '<') { in_tag = true; continue; }
-        if (ch == '>') { in_tag = false; if (!out.empty() && !last_space) { out.push_back(' '); last_space = true; } continue; }
+        if (ch == '>') {
+            in_tag = false;
+            if (!out.empty() && !last_space) { out.push_back(' '); last_space = true; }
+            continue;
+        }
         if (in_tag) continue;
         unsigned char u = (unsigned char)ch;
         if (u < 0x80 && std::isspace(u)) {
@@ -154,17 +158,17 @@ static std::string attr_value(const std::string& tag, const char* name) {
 }
 
 static std::string absolute_url(const std::string& u) {
+    if (u.empty()) return {};
     if (u.rfind("http://", 0) == 0 || u.rfind("https://", 0) == 0) return u;
-    if (!u.empty() && u[0] == '/') return std::string(BASE_URL) + u;
+    if (u.rfind("//", 0) == 0) return std::string("https:") + u;
+    if (u[0] == '/') return std::string(BASE_URL) + u;
     return std::string(BASE_URL) + "/" + u;
 }
 
 static bool looks_like_anime_path(const std::string& href) {
     if (href.size() < 5) return false;
-    std::string p = href;
-    size_t slash = p.find("/GV");
-    if (slash == std::string::npos) return false;
-    if (p.find("/playGV") != std::string::npos) return false;
+    if (href.find("/GV") == std::string::npos) return false;
+    if (href.find("/playGV") != std::string::npos) return false;
     return true;
 }
 
@@ -204,6 +208,29 @@ static std::string title_from_anchor(const std::string& anchor, const std::strin
     return title;
 }
 
+static std::string cover_from_anchor(const std::string& anchor) {
+    size_t pos = 0;
+    while (true) {
+        size_t ip = anchor.find("<img", pos);
+        if (ip == std::string::npos) break;
+        size_t ie = anchor.find('>', ip);
+        if (ie == std::string::npos) break;
+        std::string tag = anchor.substr(ip, ie - ip + 1);
+        const char* attrs[] = {"data-src", "data-original", "data-lazy-src", "src"};
+        for (const char* a : attrs) {
+            std::string u = attr_value(tag, a);
+            if (u.empty()) continue;
+            if (u.rfind("data:", 0) == 0) continue;
+            std::string low = u;
+            std::transform(low.begin(), low.end(), low.begin(), [](unsigned char c){ return (char)std::tolower(c); });
+            if (low.find("logo") != std::string::npos || low.find("avatar") != std::string::npos || low.find("loading") != std::string::npos) continue;
+            return absolute_url(u);
+        }
+        pos = ie + 1;
+    }
+    return {};
+}
+
 static void parse_home(const std::string& html, std::vector<AnimeItem>& out) {
     out.clear();
     std::set<std::string> seen;
@@ -237,7 +264,7 @@ static void parse_home(const std::string& html, std::vector<AnimeItem>& out) {
         size_t astart = html.rfind("<a", h);
         size_t aend = html.find("</a>", e);
         std::string anchor;
-        if (astart != std::string::npos && aend != std::string::npos && aend > astart && aend - astart < 6000)
+        if (astart != std::string::npos && aend != std::string::npos && aend > astart && aend - astart < 10000)
             anchor = html.substr(astart, aend + 4 - astart);
 
         AnimeItem item;
@@ -245,21 +272,31 @@ static void parse_home(const std::string& html, std::vector<AnimeItem>& out) {
         item.url = url;
         item.title = title_from_anchor(anchor, id);
         item.extra = "GiriGiri";
+        item.cover_url = cover_from_anchor(anchor);
         out.push_back(item);
         if (out.size() >= 60) break;
     }
 }
 
 static std::string extract_heading(const std::string& html) {
-    size_t h = html.find("<h3");
-    if (h == std::string::npos) return {};
-    size_t gt = html.find('>', h);
-    size_t end = html.find("</h3>", gt);
-    if (gt == std::string::npos || end == std::string::npos) return {};
-    return strip_tags(html.substr(gt + 1, end - gt - 1));
+    const char* tags[] = {"h1", "h2", "h3"};
+    for (const char* name : tags) {
+        std::string open = std::string("<") + name;
+        std::string close = std::string("</") + name + ">";
+        size_t h = html.find(open);
+        if (h == std::string::npos) continue;
+        size_t gt = html.find('>', h);
+        size_t end = html.find(close, gt);
+        if (gt == std::string::npos || end == std::string::npos) continue;
+        std::string t = strip_tags(html.substr(gt + 1, end - gt - 1));
+        if (!t.empty() && t.size() < 220) return t;
+    }
+    return {};
 }
 
-static std::string extract_meta_description(const std::string& html) {
+static std::string extract_meta_value(const std::string& html,
+                                      const char* wanted_name,
+                                      const char* wanted_prop) {
     size_t pos = 0;
     while (true) {
         size_t m = html.find("<meta", pos);
@@ -269,11 +306,44 @@ static std::string extract_meta_description(const std::string& html) {
         std::string tag = html.substr(m, e - m + 1);
         std::string name = attr_value(tag, "name");
         std::string prop = attr_value(tag, "property");
-        if (name == "description" || prop == "og:description") {
+        if ((wanted_name && name == wanted_name) || (wanted_prop && prop == wanted_prop)) {
             std::string c = attr_value(tag, "content");
             if (!c.empty()) return trim(c);
         }
         pos = e + 1;
+    }
+    return {};
+}
+
+static std::string extract_meta_description(const std::string& html) {
+    std::string s = extract_meta_value(html, "description", "og:description");
+    return s;
+}
+
+static std::string extract_cover(const std::string& html) {
+    std::string u = extract_meta_value(html, nullptr, "og:image");
+    if (u.empty()) u = extract_meta_value(html, "twitter:image", nullptr);
+    if (!u.empty()) return absolute_url(u);
+
+    size_t pos = 0;
+    while (true) {
+        size_t ip = html.find("<img", pos);
+        if (ip == std::string::npos) break;
+        size_t ie = html.find('>', ip);
+        if (ie == std::string::npos) break;
+        std::string tag = html.substr(ip, ie - ip + 1);
+        std::string alt = attr_value(tag, "alt");
+        std::string cls = attr_value(tag, "class");
+        std::string low = alt + " " + cls;
+        std::transform(low.begin(), low.end(), low.begin(), [](unsigned char c){ return (char)std::tolower(c); });
+        if (low.find("poster") != std::string::npos || low.find("cover") != std::string::npos || alt == "海报图") {
+            const char* attrs[] = {"data-src", "data-original", "src"};
+            for (const char* a : attrs) {
+                std::string src = attr_value(tag, a);
+                if (!src.empty() && src.rfind("data:", 0) != 0) return absolute_url(src);
+            }
+        }
+        pos = ie + 1;
     }
     return {};
 }
@@ -313,7 +383,6 @@ static void parse_episodes(const std::string& html, std::vector<EpisodeItem>& ou
 
         std::string url = absolute_url(href);
         if (!seen.insert(url).second) continue;
-        size_t astart = html.rfind("<a", h);
         size_t open_end = html.find('>', h);
         size_t close = html.find("</a>", open_end);
         std::string label;
@@ -372,6 +441,8 @@ bool provider_fetch_detail(const ProxyConfig& proxy,
     if (out.title.empty()) out.title = item.title;
     out.status = extract_status(html);
     out.description = extract_meta_description(html);
+    out.cover_url = extract_cover(html);
+    if (out.cover_url.empty()) out.cover_url = item.cover_url;
     parse_episodes(html, out.episodes);
 
     char tmp[128];
