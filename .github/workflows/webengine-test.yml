@@ -1,0 +1,28 @@
+name: Build WebEngine Test NRO
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - build/nxanime-v01
+    paths:
+      - '.github/workflows/webengine-test.yml'
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch NetSurf Switch test NRO
+        shell: bash
+        run: |
+          set -euxo pipefail
+          curl -L --fail --retry 3 -o NXAnime_WebEngine_Test.nro \
+            https://github.com/etonedemid/netsurf-switch/releases/download/v0.1.0/netsurf.nro
+          sha256sum NXAnime_WebEngine_Test.nro
+          test "$(stat -c%s NXAnime_WebEngine_Test.nro)" -gt 30000000
+      - name: Upload test NRO
+        uses: actions/upload-artifact@v4
+        with:
+          name: NXAnime-WebEngine-Test
+          path: NXAnime_WebEngine_Test.nro
