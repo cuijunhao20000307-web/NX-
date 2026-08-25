@@ -1,13 +1,17 @@
 #include <switch.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+
+#include "proxy.h"
 
 #define W 1280
 #define H 720
 
 typedef enum {
     SCREEN_HOME = 0,
-    SCREEN_DETAIL = 1
+    SCREEN_DETAIL = 1,
+    SCREEN_PROXY = 2
 } ScreenMode;
 
 static inline u32 rgba(u8 r, u8 g, u8 b, u8 a) {
@@ -134,7 +138,17 @@ static void card(u32* buf, u32 stride_px, int x, int y, int w, int h,
     if(selected) rect(buf,stride_px,x+24,y+h-26,72,4,red);
 }
 
-static void draw_home(u32* buf, u32 stride_px, int sel, bool appMode) {
+static void draw_header(u32* buf, u32 stride_px) {
+    u32 top = rgba(17,18,21,255);
+    u32 red = rgba(229,9,20,255);
+    u32 white = rgba(244,244,246,255);
+    rect(buf,stride_px,0,0,W,92,top);
+    rect(buf,stride_px,0,90,W,2,red);
+    text(buf,stride_px,42,28,6,"NXFLIX",white);
+    text(buf,stride_px,294,28,6,"NATIVE",red);
+}
+
+static void draw_home(u32* buf, u32 stride_px, int sel, bool appMode, const ProxyConfig* proxy) {
     u32 bg = rgba(10,10,12,255);
     u32 top = rgba(17,18,21,255);
     u32 red = rgba(229,9,20,255);
@@ -142,11 +156,8 @@ static void draw_home(u32* buf, u32 stride_px, int sel, bool appMode) {
     u32 muted = rgba(155,158,166,255);
     u32 green = rgba(45,190,105,255);
     rect(buf,stride_px,0,0,W,H,bg);
-    rect(buf,stride_px,0,0,W,92,top);
-    rect(buf,stride_px,0,90,W,2,red);
+    draw_header(buf, stride_px);
 
-    text(buf,stride_px,42,28,6,"NXFLIX",white);
-    text(buf,stride_px,294,28,6,"NATIVE",red);
     text(buf,stride_px,720,34,3,"HOME",white);
     text(buf,stride_px,820,34,3,"SEARCH",muted);
     text(buf,stride_px,964,34,3,"MY LIST",muted);
@@ -155,16 +166,18 @@ static void draw_home(u32* buf, u32 stride_px, int sel, bool appMode) {
     text(buf,stride_px,42,130,6,"NATIVE SWITCH CLIENT",white);
     text(buf,stride_px,44,188,3,"WILIWILI STYLE ARCHITECTURE",muted);
 
-    rect(buf,stride_px,938,125,292,84,rgba(24,25,29,255));
-    border(buf,stride_px,938,125,292,84,2,appMode?green:red);
-    text(buf,stride_px,958,145,3,appMode?"APPLICATION MODE":"APPLET MODE",appMode?green:red);
-    text(buf,stride_px,958,177,2,"NO WEBAPPLET",muted);
+    rect(buf,stride_px,902,118,328,104,rgba(24,25,29,255));
+    border(buf,stride_px,902,118,328,104,2,appMode?green:red);
+    text(buf,stride_px,922,135,3,appMode?"APPLICATION MODE":"APPLET MODE",appMode?green:red);
+    text(buf,stride_px,922,170,2,"PROXY",muted);
+    text(buf,stride_px,1000,170,2,proxy_mode_name(proxy->mode),white);
+    text(buf,stride_px,922,194,2,"NO WEBAPPLET",muted);
 
     int y=255, cw=278, gap=18, x0=42;
     card(buf,stride_px,x0+0*(cw+gap),y,cw,286,"DEMO STREAM","PLAYER CORE READY",sel==0,0);
     card(buf,stride_px,x0+1*(cw+gap),y,cw,286,"LOCAL MEDIA","BROWSE SD CARD",sel==1,1);
     card(buf,stride_px,x0+2*(cw+gap),y,cw,286,"NETFLIX","DRM REQUIRED",sel==2,2);
-    card(buf,stride_px,x0+3*(cw+gap),y,cw,286,"SETTINGS","APP OPTIONS",sel==3,3);
+    card(buf,stride_px,x0+3*(cw+gap),y,cw,286,"NETWORK","PROXY AND TUNNEL",sel==3,3);
 
     rect(buf,stride_px,0,620,W,100,top);
     text(buf,stride_px,42,647,3,"D PAD MOVE",muted);
@@ -174,40 +187,115 @@ static void draw_home(u32* buf, u32 stride_px, int sel, bool appMode) {
 }
 
 static void draw_detail(u32* buf, u32 stride_px, int sel) {
-    u32 bg=rgba(10,10,12,255), top=rgba(17,18,21,255), red=rgba(229,9,20,255);
+    u32 bg=rgba(10,10,12,255), red=rgba(229,9,20,255);
     u32 white=rgba(244,244,246,255), muted=rgba(155,158,166,255);
     rect(buf,stride_px,0,0,W,H,bg);
-    rect(buf,stride_px,0,0,W,92,top);
-    text(buf,stride_px,42,28,6,"NXFLIX",white);
-    text(buf,stride_px,294,28,6,"NATIVE",red);
+    draw_header(buf, stride_px);
     text(buf,stride_px,42,128,3,"B BACK",muted);
 
     if(sel==0) {
         text(buf,stride_px,42,190,7,"PLAYER CORE",white);
         text(buf,stride_px,42,272,4,"NATIVE PLAYER INTERFACE READY",red);
         text(buf,stride_px,42,340,3,"NEXT STEP ADD MPV FOR NON DRM STREAMS",muted);
-        text(buf,stride_px,42,390,3,"NO SYSTEM BROWSER IS USED",muted);
+        text(buf,stride_px,42,390,3,"NETWORK SOCKET WILL USE PROXY LAYER",muted);
     } else if(sel==1) {
         text(buf,stride_px,42,190,7,"LOCAL MEDIA",white);
         text(buf,stride_px,42,272,4,"SD CARD PROVIDER",red);
         text(buf,stride_px,42,340,3,"PATH SDMC SWITCH NXFLIX MEDIA",muted);
         text(buf,stride_px,42,390,3,"PLAYER MODULE WILL OPEN LOCAL FILES",muted);
-    } else if(sel==2) {
+    } else {
         text(buf,stride_px,42,190,7,"NETFLIX PROVIDER",white);
         text(buf,stride_px,42,272,4,"PROVIDER MODULE IS SEPARATE",red);
         text(buf,stride_px,42,340,3,"NETFLIX REQUIRES DRM AND DEVICE AUTH",muted);
-        text(buf,stride_px,42,390,3,"THIS APP DOES NOT BYPASS DRM",muted);
-        text(buf,stride_px,42,440,3,"UI AND NETWORK LAYERS REMAIN NATIVE",muted);
-    } else {
-        text(buf,stride_px,42,190,7,"SETTINGS",white);
-        text(buf,stride_px,42,272,4,"NATIVE APP OPTIONS",red);
-        text(buf,stride_px,42,340,3,"CACHE NETWORK PLAYER LANGUAGE",muted);
-        text(buf,stride_px,42,390,3,"WILIWILI STYLE MODULE DESIGN",muted);
+        text(buf,stride_px,42,390,3,"PROXY SOLVES NETWORK ACCESS ONLY",muted);
+        text(buf,stride_px,42,440,3,"THIS APP DOES NOT BYPASS DRM",muted);
     }
 
     rect(buf,stride_px,42,535,1196,2,rgba(58,60,66,255));
-    text(buf,stride_px,42,575,3,"NXFLIX NATIVE V2 0  AUTHOR LINKO",muted);
+    text(buf,stride_px,42,575,3,"NXFLIX NATIVE V2 1  AUTHOR LINKO",muted);
     text(buf,stride_px,42,640,3,"B BACK    PLUS EXIT",white);
+}
+
+static void draw_setting_row(u32* buf, u32 stride_px, int y, const char* label,
+                             const char* value, bool selected) {
+    u32 panel = selected ? rgba(39,40,46,255) : rgba(25,26,30,255);
+    u32 red=rgba(229,9,20,255), white=rgba(244,244,246,255), muted=rgba(155,158,166,255);
+    rect(buf,stride_px,42,y,1196,62,panel);
+    border(buf,stride_px,42,y,1196,62,selected?3:1,selected?red:rgba(60,62,69,255));
+    text(buf,stride_px,66,y+19,3,label,selected?white:muted);
+    text(buf,stride_px,600,y+19,3,value,white);
+}
+
+static void draw_proxy(u32* buf, u32 stride_px, int row, const ProxyConfig* cfg,
+                       const char* status, bool net_ok) {
+    u32 bg=rgba(10,10,12,255), red=rgba(229,9,20,255), white=rgba(244,244,246,255);
+    u32 muted=rgba(155,158,166,255), green=rgba(45,190,105,255);
+    rect(buf,stride_px,0,0,W,H,bg);
+    draw_header(buf, stride_px);
+    text(buf,stride_px,42,120,6,"NETWORK TUNNEL",white);
+    text(buf,stride_px,44,177,2,"APP LEVEL PROXY FOR NXFLIX TRAFFIC",muted);
+
+    char port[24];
+    snprintf(port,sizeof(port),"%d",cfg->port);
+    const char* host = cfg->host[0] ? cfg->host : "NOT SET";
+    const char* user = cfg->username[0] ? "SET" : "NOT SET";
+    const char* pass = cfg->password[0] ? "SET" : "NOT SET";
+
+    draw_setting_row(buf,stride_px,220,"MODE",proxy_mode_name(cfg->mode),row==0);
+    draw_setting_row(buf,stride_px,288,"HOST",host,row==1);
+    draw_setting_row(buf,stride_px,356,"PORT",port,row==2);
+    draw_setting_row(buf,stride_px,424,"USERNAME",user,row==3);
+    draw_setting_row(buf,stride_px,492,"PASSWORD",pass,row==4);
+    draw_setting_row(buf,stride_px,560,"TEST NETFLIX 443",net_ok?"A RUN TEST":"NETWORK OFF",row==5);
+
+    if (status && status[0]) {
+        text(buf,stride_px,42,635,2,status, strstr(status,"OK")?green:red);
+    } else {
+        text(buf,stride_px,42,635,2,"UP DOWN SELECT   LEFT RIGHT MODE   A EDIT TEST   X SAVE   B BACK",muted);
+    }
+}
+
+static bool keyboard_edit(const char* title, const char* initial, char* out, size_t out_size) {
+    SwkbdConfig kbd;
+    Result rc = swkbdCreate(&kbd, 0);
+    if (R_FAILED(rc)) return false;
+    swkbdConfigMakePresetDefault(&kbd);
+    swkbdConfigSetHeaderText(&kbd, title);
+    swkbdConfigSetInitialText(&kbd, initial ? initial : "");
+    rc = swkbdShow(&kbd, out, out_size);
+    swkbdClose(&kbd);
+    return R_SUCCEEDED(rc);
+}
+
+static void edit_proxy_field(ProxyConfig* cfg, int row, char* status, size_t status_size) {
+    char out[256] = {0};
+    if (row == 1) {
+        if (keyboard_edit("Proxy host or IP", cfg->host, out, sizeof(out)) && out[0]) {
+            snprintf(cfg->host, sizeof(cfg->host), "%s", out);
+            snprintf(status,status_size,"HOST SAVED");
+        }
+    } else if (row == 2) {
+        char initial[24];
+        snprintf(initial,sizeof(initial),"%d",cfg->port);
+        if (keyboard_edit("Proxy port", initial, out, sizeof(out)) && out[0]) {
+            int p = atoi(out);
+            if (p > 0 && p <= 65535) {
+                cfg->port = p;
+                snprintf(status,status_size,"PORT SAVED");
+            } else snprintf(status,status_size,"INVALID PORT");
+        }
+    } else if (row == 3) {
+        if (keyboard_edit("Proxy username", cfg->username, out, sizeof(out))) {
+            snprintf(cfg->username, sizeof(cfg->username), "%s", out);
+            snprintf(status,status_size,"USERNAME SAVED");
+        }
+    } else if (row == 4) {
+        if (keyboard_edit("Proxy password", cfg->password, out, sizeof(out))) {
+            snprintf(cfg->password, sizeof(cfg->password), "%s", out);
+            snprintf(status,status_size,"PASSWORD SAVED");
+        }
+    }
+    proxy_config_save(cfg);
 }
 
 int main(int argc, char** argv) {
@@ -222,9 +310,17 @@ int main(int argc, char** argv) {
     if (R_FAILED(rc)) return (int)rc;
     framebufferMakeLinear(&fb);
 
+    Result net_rc = socketInitializeDefault();
+    bool net_ok = R_SUCCEEDED(net_rc);
+
+    ProxyConfig proxy;
+    proxy_config_load(&proxy);
+
     int selected = 0;
+    int proxy_row = 0;
     ScreenMode screen = SCREEN_HOME;
     bool appMode = appletGetAppletType() == AppletType_Application;
+    char proxy_status[160] = {0};
 
     while (appletMainLoop()) {
         padUpdate(&pad);
@@ -232,27 +328,56 @@ int main(int argc, char** argv) {
         if (down & HidNpadButton_Plus) break;
 
         if (screen == SCREEN_HOME) {
-            if ((down & HidNpadButton_Left) || (down & HidNpadButton_StickLLeft)) {
-                selected = (selected + 3) % 4;
+            if ((down & HidNpadButton_Left) || (down & HidNpadButton_StickLLeft)) selected = (selected + 3) % 4;
+            if ((down & HidNpadButton_Right) || (down & HidNpadButton_StickLRight)) selected = (selected + 1) % 4;
+            if (down & HidNpadButton_A) {
+                if (selected == 3) {
+                    screen = SCREEN_PROXY;
+                    proxy_status[0] = 0;
+                } else screen = SCREEN_DETAIL;
             }
-            if ((down & HidNpadButton_Right) || (down & HidNpadButton_StickLRight)) {
-                selected = (selected + 1) % 4;
-            }
-            if (down & HidNpadButton_A) screen = SCREEN_DETAIL;
-        } else {
+        } else if (screen == SCREEN_DETAIL) {
             if (down & HidNpadButton_B) screen = SCREEN_HOME;
+        } else if (screen == SCREEN_PROXY) {
+            if (down & HidNpadButton_B) {
+                proxy_config_save(&proxy);
+                screen = SCREEN_HOME;
+            }
+            if (down & HidNpadButton_Up) proxy_row = (proxy_row + 5) % 6;
+            if (down & HidNpadButton_Down) proxy_row = (proxy_row + 1) % 6;
+            if (proxy_row == 0 && ((down & HidNpadButton_Left) || (down & HidNpadButton_Right))) {
+                if (down & HidNpadButton_Left) proxy.mode = (ProxyMode)((proxy.mode + 2) % 3);
+                else proxy.mode = (ProxyMode)((proxy.mode + 1) % 3);
+                proxy_config_save(&proxy);
+                snprintf(proxy_status,sizeof(proxy_status),"MODE %s",proxy_mode_name(proxy.mode));
+            }
+            if (down & HidNpadButton_X) {
+                if (proxy_config_save(&proxy)) snprintf(proxy_status,sizeof(proxy_status),"CONFIG SAVED");
+                else snprintf(proxy_status,sizeof(proxy_status),"SAVE FAILED");
+            }
+            if (down & HidNpadButton_A) {
+                if (proxy_row >= 1 && proxy_row <= 4) {
+                    edit_proxy_field(&proxy, proxy_row, proxy_status, sizeof(proxy_status));
+                } else if (proxy_row == 5) {
+                    if (!net_ok) snprintf(proxy_status,sizeof(proxy_status),"NETWORK INIT FAILED");
+                    else proxy_test(&proxy, proxy_status, sizeof(proxy_status));
+                }
+            }
         }
 
         u32 stride = 0;
         u32* buf = (u32*)framebufferBegin(&fb, &stride);
         u32 stride_px = stride / sizeof(u32);
 
-        if (screen == SCREEN_HOME) draw_home(buf, stride_px, selected, appMode);
-        else draw_detail(buf, stride_px, selected);
+        if (screen == SCREEN_HOME) draw_home(buf, stride_px, selected, appMode, &proxy);
+        else if (screen == SCREEN_DETAIL) draw_detail(buf, stride_px, selected);
+        else draw_proxy(buf, stride_px, proxy_row, &proxy, proxy_status, net_ok);
 
         framebufferEnd(&fb);
     }
 
+    proxy_config_save(&proxy);
+    if (net_ok) socketExit();
     framebufferClose(&fb);
     return 0;
 }
