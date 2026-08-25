@@ -15,10 +15,10 @@ INCLUDES    := nxanime_source
 
 APP_TITLE   := NXAnime
 APP_AUTHOR  := LINKO
-APP_VERSION := 0.3.0
+APP_VERSION := 0.4.0
 
-PKG_CFLAGS  := $(shell pkg-config --cflags freetype2 libcurl libpng libwebp 2>/dev/null)
-PKG_LIBS    := $(shell pkg-config --libs --static libcurl freetype2 libpng libwebp 2>/dev/null)
+PKG_CFLAGS  := $(shell pkg-config --cflags freetype2 libcurl libpng libwebp sdl2 libavformat libavcodec libavutil libswscale libswresample 2>/dev/null)
+PKG_LIBS    := $(shell pkg-config --libs --static libcurl freetype2 libpng libwebp sdl2 libavformat libavcodec libavutil libswscale libswresample 2>/dev/null)
 
 ARCH        := -march=armv8-a+crc+crypto -mtune=cortex-a57 -mtp=soft -fPIE
 CFLAGS      := -g -Wall -O2 -ffunction-sections $(ARCH) $(DEFINES) $(PKG_CFLAGS)
