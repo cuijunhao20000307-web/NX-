@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cstdio>
+#include <cstring>
 
 static size_t media_write_cb(void* ptr, size_t size, size_t nmemb, void* userdata) {
     if (!ptr || !userdata) return 0;
