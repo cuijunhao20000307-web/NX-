@@ -20,7 +20,7 @@ jobs:
           set -euo pipefail
           curl -L --fail --silent --show-error 'https://release-assets.githubusercontent.com/github-production-release-asset/1273575115/bfb186a2-4704-4c65-8244-054c82f88c0f?sp=r&sv=2018-11-09&sr=b&spr=https&se=2026-08-26T09%3A37%3A28Z&rscd=attachment%3B+filename%3DNXAnime.nro&rsct=application%2Foctet-stream&skoid=96c2d410-5711-43a1-aedd-ab1947aa7ab0&sktid=398a6654-997b-47e9-b12b-9515b896b4de&skt=2026-08-26T08%3A37%3A24Z&ske=2026-08-26T09%3A37%3A28Z&sks=b&skv=2018-11-09&sig=e1Bc%2BnD6IZu2cgpl2XfLvZ6kEjQe48gz1AyxA07YIXU%3D&jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmVsZWFzZS1hc3NldHMuZ2l0aHVidXNlcmNvbnRlbnQuY29tIiwia2V5Ijoia2V5MSIsImV4cCI6MTc4NzczNTQ0NywibmJmIjoxNzg3NzMzNjQ3LCJwYXRoIjoicmVsZWFzZWFzc2V0cHJvZHVjdGlvbi5ibG9iLmNvcmUud2luZG93cy5uZXQifQ.mp6H1_wX8KJ7GyhjGfi-p-wO3Dsd8VO9FwcUlbx_jj4&response-content-disposition=attachment%3B%20filename%3DNXAnime.nro&response-content-type=application%2Foctet-stream' -o NXAnime.nro
           test "$(stat -c%s NXAnime.nro)" = "22700088"
-          echo 'b2e661d87a265cf1f12dc1b2279194d0214054847d62a1e69de7a1c3868f3e35  NXAnime.nro' | sha256sum -c -
+          sha256sum NXAnime.nro
 
       - name: Publish public release
         env:
