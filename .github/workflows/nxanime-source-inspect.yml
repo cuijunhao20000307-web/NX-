@@ -1,0 +1,28 @@
+name: NXAnime Source Inspect
+
+on:
+  push:
+    branches: [ nxanime-build-075-fix ]
+    paths:
+      - '.github/workflows/nxanime-source-inspect.yml'
+  workflow_dispatch:
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reconstruct source archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat nxanime_build_blob/part* > /tmp/nxanime-source.b64
+          base64 -d /tmp/nxanime-source.b64 > /tmp/nxanime-source.tar.gz
+          tar -tzf /tmp/nxanime-source.tar.gz | head -100
+          sha256sum /tmp/nxanime-source.tar.gz
+          cp /tmp/nxanime-source.tar.gz ./nxanime-source.tar.gz
+      - name: Upload source archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: nxanime-source-inspect
+          path: nxanime-source.tar.gz
