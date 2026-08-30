@@ -12,17 +12,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Reconstruct source archive
+      - name: Recover source files
         shell: bash
         run: |
-          set -euo pipefail
+          set -u
           cat nxanime_build_blob/part* > /tmp/nxanime-source.b64
           base64 -d /tmp/nxanime-source.b64 > /tmp/nxanime-source.tar.gz
-          tar -tzf /tmp/nxanime-source.tar.gz | head -100
-          sha256sum /tmp/nxanime-source.tar.gz
-          cp /tmp/nxanime-source.tar.gz ./nxanime-source.tar.gz
-      - name: Upload source archive
+          mkdir -p /tmp/recovered
+          tar -xzf /tmp/nxanime-source.tar.gz -C /tmp/recovered || true
+          find /tmp/recovered -maxdepth 3 -type f -printf '%p %s\n' | sort
+          test -f /tmp/recovered/NXAnime-0.7.5-fix/Makefile
+          test -f /tmp/recovered/NXAnime-0.7.5-fix/nxanime_source/main.cpp
+          test -f /tmp/recovered/NXAnime-0.7.5-fix/nxanime_source/player.cpp
+          tar -czf recovered-source.tar.gz -C /tmp/recovered NXAnime-0.7.5-fix
+      - name: Upload recovered source
         uses: actions/upload-artifact@v4
         with:
           name: nxanime-source-inspect
-          path: nxanime-source.tar.gz
+          path: recovered-source.tar.gz
