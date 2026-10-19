@@ -242,6 +242,7 @@ swap('''    IMG_Quit();TTF_Quit();SDL_Quit();''','''    if(localMusic){Mix_HaltM
     IMG_Quit();TTF_Quit();SDL_Quit();''')
 # Fixed text: don't confuse successful foreground buffering with background availability.
 swap('APP_VERSION := 0.1.0-beta2' if False else 'constexpr int W=1280,H=720;', 'constexpr int W=1280,H=720;')
+s=s.replace('void cover(const Track& t,','void circleOutline(int cx,int cy,int radius,Col c);\nvoid cover(const Track& t,',1)
 p.write_text(s)
 mk=root/'Makefile'
 s=mk.read_text()
