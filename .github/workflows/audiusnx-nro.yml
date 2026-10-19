@@ -24,7 +24,14 @@ jobs:
           grep -q 'Mix_LoadMUS' audiusnx/work/source/main.cpp
       - name: Install Switch SDL and HTTPS dependencies
         run: |
-          dkp-pacman -Sy --noconfirm --needed switch-sdl2 switch-sdl2_ttf switch-sdl2_image switch-sdl2_mixer switch-curl switch-mbedtls switch-libpng switch-freetype switch-libjpeg-turbo
+          for attempt in 1 2 3 4; do
+            if dkp-pacman -Sy --noconfirm --needed switch-sdl2 switch-sdl2_ttf switch-sdl2_image switch-sdl2_mixer switch-curl switch-mbedtls switch-libpng switch-freetype switch-libjpeg-turbo; then
+              exit 0
+            fi
+            echo "devkitPro mirror retry ${attempt}/4"
+            sleep 7
+          done
+          exit 1
       - name: Build AudiusNX NRO
         run: |
           cd audiusnx/work
