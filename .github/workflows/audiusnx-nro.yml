@@ -30,7 +30,8 @@ jobs:
           test -s AudiusNX.nro
       - name: Verify NRO file
         run: |
-          file audiusnx/work/AudiusNX.nro
+          test -s audiusnx/work/AudiusNX.nro
+          od -An -tx1 -j 16 -N 4 audiusnx/work/AudiusNX.nro
           sha256sum audiusnx/work/AudiusNX.nro
           ls -lh audiusnx/work/AudiusNX.nro
       - name: Upload NRO artifact
