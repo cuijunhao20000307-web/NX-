@@ -1,0 +1,41 @@
+name: AudiusNX NRO build
+on:
+  push:
+    branches:
+      - audiusnx-build
+    paths:
+      - 'audiusnx/**'
+      - '.github/workflows/audiusnx-nro.yml'
+  workflow_dispatch:
+jobs:
+  nro:
+    runs-on: ubuntu-latest
+    container: devkitpro/devkita64:latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore isolated beta2 sources
+        run: |
+          mkdir -p audiusnx/work
+          base64 -d audiusnx/source.tar.xz.b64 | tar -xJf - -C audiusnx/work
+          test -s audiusnx/work/source/main.cpp
+          test -s audiusnx/work/Makefile
+      - name: Install Switch SDL and HTTPS dependencies
+        run: |
+          dkp-pacman -Sy --noconfirm --needed switch-sdl2 switch-sdl2_ttf switch-sdl2_image switch-curl switch-mbedtls switch-libpng switch-freetype switch-libjpeg-turbo
+      - name: Build AudiusNX NRO
+        run: |
+          cd audiusnx/work
+          make -j2
+          test -s AudiusNX.nro
+      - name: Verify NRO file
+        run: |
+          file audiusnx/work/AudiusNX.nro
+          sha256sum audiusnx/work/AudiusNX.nro
+          ls -lh audiusnx/work/AudiusNX.nro
+      - name: Upload NRO artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: AudiusNX-Beta2-NRO-unverified
+          path: audiusnx/work/AudiusNX.nro
+          if-no-files-found: error
