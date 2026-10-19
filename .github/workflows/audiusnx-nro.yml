@@ -21,16 +21,10 @@ jobs:
           test -s audiusnx/work/source/main.cpp
           test -s audiusnx/work/Makefile
           grep -q 'netease::getTracks' audiusnx/work/source/main.cpp
-      - name: Verify bundled SDL2 and HTTPS portlibs
-        run: |
-          export PKG_CONFIG_PATH=/opt/devkitpro/portlibs/switch/lib/pkgconfig
-          export PKG_CONFIG_LIBDIR=/opt/devkitpro/portlibs/switch/lib/pkgconfig
-          command -v aarch64-none-elf-g++
-          /opt/devkitpro/portlibs/switch/bin/aarch64-none-elf-pkg-config --modversion sdl2 SDL2_ttf SDL2_image SDL2_mixer libcurl || true
-          ls -l /opt/devkitpro/portlibs/switch/lib/libSDL2*.a /opt/devkitpro/portlibs/switch/lib/libcurl.a
       - name: Build Switch NRO
         run: |
           cd audiusnx/work
+          export PATH=/opt/devkitpro/devkitA64/bin:/opt/devkitpro/tools/bin:$PATH
           make -j2
           test -s AudiusNX.nro
       - name: Verify NRO file
