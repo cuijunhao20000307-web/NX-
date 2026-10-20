@@ -1,4 +1,4 @@
-name: NetEase Switch Beta 4 NRO build
+name: piplayer Beta 4.1 NRO build
 on:
   push:
     branches:
@@ -14,28 +14,32 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
-      - name: Restore isolated NetEase Beta 4 sources
+      - name: Restore isolated piplayer Beta 4.1 sources
         run: |
           mkdir -p audiusnx/work
           base64 -d audiusnx/source.tar.xz.b64 | tar -xJf - -C audiusnx/work
           test -s audiusnx/work/source/main.cpp
           test -s audiusnx/work/Makefile
+          test -s audiusnx/work/icon.jpg
+          grep -q 'APP_TITLE := piplayer' audiusnx/work/Makefile
           grep -q 'netease::getTracks' audiusnx/work/source/main.cpp
       - name: Build Switch NRO
         run: |
           cd audiusnx/work
           export PATH=/opt/devkitpro/devkitA64/bin:/opt/devkitpro/tools/bin:$PATH
           make -j2
-          test -s AudiusNX.nro
+          test -s piplayer.nro
       - name: Verify NRO file
         run: |
-          test -s audiusnx/work/AudiusNX.nro
-          od -An -tx1 -j 16 -N 4 audiusnx/work/AudiusNX.nro
-          sha256sum audiusnx/work/AudiusNX.nro
-          ls -lh audiusnx/work/AudiusNX.nro
+          test -s audiusnx/work/piplayer.nro
+          od -An -tx1 -j 16 -N 4 audiusnx/work/piplayer.nro
+          test -s audiusnx/work/piplayer.nacp
+          grep -aq piplayer audiusnx/work/piplayer.nacp
+          sha256sum audiusnx/work/piplayer.nro
+          ls -lh audiusnx/work/piplayer.nro
       - name: Upload NRO artifact
         uses: actions/upload-artifact@v4
         with:
-          name: NeteaseNX-Beta4-NRO-unverified
-          path: audiusnx/work/AudiusNX.nro
+          name: piplayer-Beta4.1-NRO
+          path: audiusnx/work/piplayer.nro
           if-no-files-found: error
