@@ -1,0 +1,45 @@
+name: School Stealth 3D v0.2 NRO isolated build
+on:
+  push:
+    branches: [schoolstealth-3d-v02]
+    paths: ['.github/schoolstealth_3d_src.dat','.github/workflows/schoolstealth-3d.yml']
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: devkitpro/devkita64:latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check transferred source archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          head -c 8540 .github/schoolstealth_3d_src.dat > source.tar.xz
+          sha256sum source.tar.xz
+          echo "1acb497e5329f796121c49396e0f55f366f7859c7845622028168c0f1c05a946  source.tar.xz" | sha256sum -c -
+          mkdir -p BuildSchoolStealth3D
+          tar -xJf source.tar.xz -C BuildSchoolStealth3D
+      - name: Compile NRO with devkitA64 and libnx
+        shell: bash
+        run: |
+          set -euo pipefail
+          export DEVKITPRO=/opt/devkitpro
+          export PATH=/opt/devkitpro/devkitA64/bin:/opt/devkitpro/tools/bin:$PATH
+          make -C BuildSchoolStealth3D -j2
+          test -s BuildSchoolStealth3D/SchoolStealth3D.nro
+      - name: Verify NRO and commit isolated binary
+        shell: bash
+        run: |
+          set -euo pipefail
+          magic="$(od -An -tx1 -j 16 -N 4 BuildSchoolStealth3D/SchoolStealth3D.nro | tr -d ' \n')"
+          test "$magic" = "4e524f30"
+          cp BuildSchoolStealth3D/SchoolStealth3D.nro SchoolStealth3D_v0.2.nro
+          sha256sum SchoolStealth3D_v0.2.nro
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f SchoolStealth3D_v0.2.nro
+          git commit -m "CI build original 3D school demo v0.2 [skip ci]"
+          git push origin HEAD:schoolstealth-3d-v02
