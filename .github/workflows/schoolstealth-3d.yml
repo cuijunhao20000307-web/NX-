@@ -16,6 +16,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          for n in 1024 2048 3072 4096 5120 6144 7168 8192; do head -c "$n" .github/schoolstealth_3d_src.dat | sha256sum; done
           head -c 8540 .github/schoolstealth_3d_src.dat > source.tar.xz
           sha256sum source.tar.xz
           echo "1acb497e5329f796121c49396e0f55f366f7859c7845622028168c0f1c05a946  source.tar.xz" | sha256sum -c -
