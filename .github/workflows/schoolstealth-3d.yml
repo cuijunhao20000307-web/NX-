@@ -19,21 +19,15 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           import base64,hashlib
-          blob=Path('.github/schoolstealth_3d_src.dat').read_bytes()
-          prefix=blob[:3072]
-          s=Path('.github/schoolstealth_3d_tail_0.b64').read_text().strip()+Path('.github/schoolstealth_3d_tail_1.b64').read_text().strip()
-          wanted="1acb497e5329f796121c49396e0f55f366f7859c7845622028168c0f1c05a946"
-          print('prefix bytes:',len(prefix),'tail chars:',len(s),flush=True)
-          assert len(prefix)==3072 and len(s)==7291
-          for pos in range(4000,5001):
-              for ch in "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/":
-                  try: suffix=base64.b64decode(s[:pos]+ch+s[pos:],validate=True)
-                  except Exception: continue
-                  if len(suffix)==5468 and hashlib.sha256(prefix+suffix).hexdigest()==wanted:
-                      Path('source.tar.xz').write_bytes(prefix+suffix)
-                      print('verified source:',len(prefix+suffix),'bytes; repaired char at',pos,flush=True)
-                      raise SystemExit(0)
-          raise SystemExit('cannot reconstruct verified source archive')
+          prefix=Path('.github/schoolstealth_3d_src.dat').read_bytes()[:3072]
+          tail=Path('.github/schoolstealth_3d_tail_fixed.b64').read_text().strip()
+          assert len(prefix)==3072 and len(tail)==7292, (len(prefix),len(tail))
+          raw=prefix+base64.b64decode(tail,validate=True)
+          target='1acb497e5329f796121c49396e0f55f366f7859c7845622028168c0f1c05a946'
+          actual=hashlib.sha256(raw).hexdigest()
+          print('SHA256',actual,'BYTES',len(raw),flush=True)
+          assert len(raw)==8540 and actual==target,'source archive checksum mismatch'
+          Path('source.tar.xz').write_bytes(raw)
           PY
           mkdir -p BuildSchoolStealth3D
           tar -xJf source.tar.xz -C BuildSchoolStealth3D
@@ -53,9 +47,15 @@ jobs:
           test "$magic" = "4e524f30"
           cp BuildSchoolStealth3D/SchoolStealth3D.nro SchoolStealth3D_v0.2.nro
           sha256sum SchoolStealth3D_v0.2.nro
+          python3 - <<'PY'
+          from zipfile import ZipFile,ZIP_DEFLATED
+          with ZipFile('SchoolStealth3D_v0.2_Switch_NRO.zip','w',compression=ZIP_DEFLATED,compresslevel=6) as z:
+              z.write('SchoolStealth3D_v0.2.nro','switch/SchoolStealth3D/SchoolStealth3D.nro')
+              z.writestr('README_安装说明.txt','SchoolStealth3D v0.2 是原创第三人称校园潜行3D测试版，并非《病娇模拟器》原版。解压后将 switch/SchoolStealth3D/SchoolStealth3D.nro 放入 SD 卡同名目录；通过 hbmenu 启动。左摇杆移动、右摇杆转镜头、ZL潜行、ZR奔跑、A互动、X重置、+退出。尚未在 Switch 真机测试。\n')
+          PY
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -f SchoolStealth3D_v0.2.nro
+          git add -f SchoolStealth3D_v0.2.nro SchoolStealth3D_v0.2_Switch_NRO.zip
           git commit -m "CI build original 3D school demo v0.2 [skip ci]"
           git push origin HEAD:schoolstealth-3d-v02
