@@ -16,10 +16,25 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for n in 1024 2048 3072 4096 5120 6144 7168 8192; do head -c "$n" .github/schoolstealth_3d_src.dat | sha256sum; done
-          head -c 8540 .github/schoolstealth_3d_src.dat > source.tar.xz
-          sha256sum source.tar.xz
-          echo "1acb497e5329f796121c49396e0f55f366f7859c7845622028168c0f1c05a946  source.tar.xz" | sha256sum -c -
+          python3 - <<'PY'
+          from pathlib import Path
+          import base64,hashlib
+          blob=Path('.github/schoolstealth_3d_src.dat').read_bytes()
+          prefix=blob[:3072]
+          s=Path('.github/schoolstealth_3d_tail_0.b64').read_text().strip()+Path('.github/schoolstealth_3d_tail_1.b64').read_text().strip()
+          wanted="1acb497e5329f796121c49396e0f55f366f7859c7845622028168c0f1c05a946"
+          print('prefix bytes:',len(prefix),'tail chars:',len(s),flush=True)
+          assert len(prefix)==3072 and len(s)==7291
+          for pos in range(4000,5001):
+              for ch in "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/":
+                  try: suffix=base64.b64decode(s[:pos]+ch+s[pos:],validate=True)
+                  except Exception: continue
+                  if len(suffix)==5468 and hashlib.sha256(prefix+suffix).hexdigest()==wanted:
+                      Path('source.tar.xz').write_bytes(prefix+suffix)
+                      print('verified source:',len(prefix+suffix),'bytes; repaired char at',pos,flush=True)
+                      raise SystemExit(0)
+          raise SystemExit('cannot reconstruct verified source archive')
+          PY
           mkdir -p BuildSchoolStealth3D
           tar -xJf source.tar.xz -C BuildSchoolStealth3D
       - name: Compile NRO with devkitA64 and libnx
